@@ -1,11 +1,30 @@
-<div align="center">
+# WHO Hand Hygiene Compliance App
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A modern, fast web application for recording and analyzing World Health Organization (WHO) Hand Hygiene Compliance observations, built with React, Vite, and Turso SQLite database on Vercel Serverless Functions.
 
-  <h1>Built with AI Studio</h2>
+## Features
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+- **WHO Compliant Observation Form**: Standard 5 Moments for Hand Hygiene recording form.
+- **Analytics & Dashboard**: Interactive compliance metrics and breakdown reports.
+- **Records Manager**: Full session list, auto duration recalculation, and Copy Month archive feature.
+- **Turso SQLite Backend**: High-performance SQLite database connection via Serverless API (`/api`).
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Deployment on Vercel
 
-</div>
+### Environment Variables
+
+Set the following Environment Variables in your Vercel Project Settings:
+
+- `TURSO_DATABASE_URL` (Your Turso SQLite Database URL)
+- `TURSO_AUTH_TOKEN` (Your Turso Auth Token)
+
+## Local Development
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Run development server:
+   ```bash
+   npm run dev
+   ```
