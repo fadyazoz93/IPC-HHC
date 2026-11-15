@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { exportReportsToExcel } from './src/utils/excelExport';
 import { TursoImportModal } from './src/components/TursoImportModal';
+import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 
 (window as any).React = React;
 (window as any).ReactDOM = ReactDOM;
@@ -708,7 +709,7 @@ import { TursoImportModal } from './src/components/TursoImportModal';
           return sessionsList;
       };
 
-      const ObservationForm = ({ initialData, onSubmitSuccess, settings }) => {
+      const ObservationForm = ({ initialData, onSubmitSuccess, settings, currentCenter, onSwitchCenter }) => {
         const [isSubmitting, setIsSubmitting] = useState(false);
         const [message, setMessage] = useState(null);
         const [formSaved, setFormSaved] = useState(false);
@@ -718,7 +719,10 @@ import { TursoImportModal } from './src/components/TursoImportModal';
         const fetchAllSessions = () => {
             window.google.script.run.withSuccessHandler(rows => {
                 if (rows && !rows.error && Array.isArray(rows)) {
-                    setAllSessions(parseSessionsFromRows(rows));
+                    const scopedRows = currentCenter
+                        ? rows.filter(r => (r['Facility'] || '').trim().toLowerCase() === currentCenter.trim().toLowerCase())
+                        : rows;
+                    setAllSessions(parseSessionsFromRows(scopedRows));
                 }
                 setSessionsLoaded(true);
             }).withFailureHandler(() => {
@@ -728,11 +732,11 @@ import { TursoImportModal } from './src/components/TursoImportModal';
 
         useEffect(() => {
             fetchAllSessions();
-        }, []);
+        }, [currentCenter]);
         
         // Initialize with requested defaults
         const [session, setSession] = useState({ 
-            facility: (initialData && initialData.sessionInfo && initialData.sessionInfo.facility) || '', 
+            facility: (initialData && initialData.sessionInfo && initialData.sessionInfo.facility) || currentCenter || '', 
             service: '', 
             ward: '', 
             department: '', 
@@ -754,6 +758,8 @@ import { TursoImportModal } from './src/components/TursoImportModal';
         useEffect(() => {
           if (initialData) {
              setSession(initialData.sessionInfo);
+          } else if (currentCenter) {
+             setSession(prev => ({ ...prev, facility: currentCenter }));
           }
           if (initialData) {
              const lp = [];
@@ -1050,7 +1056,7 @@ import { TursoImportModal } from './src/components/TursoImportModal';
          </div>
       );
 
-      const Dashboard = ({ settings }) => {
+      const Dashboard = ({ settings, currentCenter }) => {
         const [data, setData] = useState([]);
         const [loading, setLoading] = useState(true);
         const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -1058,14 +1064,16 @@ import { TursoImportModal } from './src/components/TursoImportModal';
         useEffect(() => {
           setLoading(true);
           window.google.script.run.withSuccessHandler(rows => { 
-             const allRows = rows || [];
-             setData(allRows); 
-             if (allRows.length > 0 && allRows[0]['Session Date']) {
-                setFilterMonth(String(allRows[0]['Session Date']).slice(0, 7));
+             const scopedRows = currentCenter
+                ? (rows || []).filter(r => (r['Facility'] || '').trim().toLowerCase() === currentCenter.trim().toLowerCase())
+                : (rows || []);
+             setData(scopedRows); 
+             if (scopedRows.length > 0 && scopedRows[0]['Session Date']) {
+                setFilterMonth(String(scopedRows[0]['Session Date']).slice(0, 7));
              }
              setLoading(false); 
           }).getObservationData();
-        }, []);
+        }, [currentCenter]);
         
         if (!BarChart || !XAxis || !YAxis) return <div className="p-10 text-center text-red-500 border border-red-200 bg-red-50 rounded-lg m-4">Charts library failed to load. Please check your internet connection or try again.</div>;
 
@@ -1209,6 +1217,13 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                 <div className="flex flex-col md:flex-row justify-between items-center no-print gap-4">
                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                        <h2 className="text-xl font-bold text-slate-800">Dashboard</h2>
+                       {currentCenter && (
+                           <span className="text-xs bg-orange-100 text-orange-900 border border-orange-200 font-bold px-2.5 py-1 rounded-lg font-['Cairo'] flex items-center gap-1.5 shadow-2xs">
+                               <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
+                               <span className="text-slate-500 font-normal">المركز:</span>
+                               <span>{currentCenter}</span>
+                           </span>
+                       )}
                        <input type="month" className="border border-slate-300 p-2 rounded-md text-sm focus:ring-2 focus:ring-orange-500 outline-none" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} />
                    </div>
                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end font-['Cairo']">
@@ -1476,7 +1491,7 @@ import { TursoImportModal } from './src/components/TursoImportModal';
           );
       };
 
-      const DataManager = ({ onEdit, settings, setSettings }) => {
+      const DataManager = ({ onEdit, settings, setSettings, currentCenter, onSwitchCenter }) => {
         const isAdmin = true;
         const canCopy = true;
         const canEdit = true;
@@ -1754,7 +1769,10 @@ import { TursoImportModal } from './src/components/TursoImportModal';
               if (data && data.error) {
                   alert("خطأ أثناء جلب البيانات: " + data.error);
               } else {
-                  const structured = groupRowsBySession(data || []);
+                  const scopedData = currentCenter
+                     ? (data || []).filter(r => (r['Facility'] || '').trim().toLowerCase() === currentCenter.trim().toLowerCase())
+                     : (data || []);
+                  const structured = groupRowsBySession(scopedData);
                   setSessions(structured);
                   processGroupedMonths(structured);
               }
@@ -1766,7 +1784,7 @@ import { TursoImportModal } from './src/components/TursoImportModal';
            }).getObservationData();
         };
 
-        useEffect(() => { fetchRecords(); }, []);
+        useEffect(() => { fetchRecords(); }, [currentCenter]);
         const [deleteConfirmId, setDeleteConfirmId] = useState(null);
         const [deleteMonthsConfirm, setDeleteMonthsConfirm] = useState(null);
         const [deletingMonthLoading, setDeletingMonthLoading] = useState(false);
@@ -3176,13 +3194,28 @@ import { TursoImportModal } from './src/components/TursoImportModal';
           </button>
       );
 
-      const MobileBottomNav = ({ currentView, setView, canAccessSettings = true }) => (
+      const MobileBottomNav = ({ currentView, setView, canAccessSettings = true, onSwitchCenter, currentCenter }) => (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center px-2 py-2 pb-safe z-50 md:hidden shadow-[0_-2px_10px_rgba(0,0,0,0.03)] backdrop-blur-lg bg-white/90">
              <NavButton id="form" label="Form" icon={<Icons.Form/>} active={currentView === 'form'} setView={setView} />
              <NavButton id="dashboard" label="Dash" icon={<Icons.Activity/>} active={currentView === 'dashboard'} setView={setView} />
              <NavButton id="records" label="Records" icon={<Icons.Database/>} active={currentView === 'records'} setView={setView} />
              {canAccessSettings && (
                  <NavButton id="settings" label="Settings" icon={<Icons.Settings/>} active={currentView === 'settings'} setView={setView} />
+             )}
+             {onSwitchCenter && (
+                 <button 
+                   onClick={onSwitchCenter}
+                   className="flex flex-col items-center justify-center w-full py-1 active:scale-90 transition-transform duration-200 text-slate-500 hover:text-orange-600 font-['Cairo']"
+                   title={`المركز النشط: ${currentCenter || ''} - انقر للتبديل`}
+                 >
+                   <div className="mb-1 opacity-80">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600">
+                         <path d="M3 21h18"/>
+                         <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+                      </svg>
+                   </div>
+                   <span className="text-[9px] font-bold leading-none truncate max-w-[65px]">{currentCenter ? 'تبديل' : 'المراكز'}</span>
+                 </button>
              )}
           </div>
       );
@@ -3240,7 +3273,7 @@ import { TursoImportModal } from './src/components/TursoImportModal';
           );
       };
 
-      const Settings = ({ settings, setSettings }) => {
+      const Settings = ({ settings, setSettings, currentCenter, onSelectCenter, onSwitchCenter }) => {
           const isReadOnly = false;
           const [showTursoImportModal, setShowTursoImportModal] = useState(false);
           const [centerToDeleteInSettings, setCenterToDeleteInSettings] = useState<string | null>(null);
@@ -3303,6 +3336,9 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                           if (res.settings) {
                               setLocalSettings(res.settings);
                               if (setSettings) setSettings(res.settings);
+                          }
+                          if (currentCenter && currentCenter.trim().toLowerCase() === name.trim().toLowerCase()) {
+                              if (onSwitchCenter) onSwitchCenter();
                           }
                       } else {
                           setMessage({ type: 'error', text: res?.error || 'حدث خطأ أثناء حذف المركز' });
@@ -3510,7 +3546,20 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                                           {(localSettings?.facilities || []).length} مركز مسجل
                                       </span>
                                   </h2>
+                                  <p className="text-xs text-slate-600 mt-1">
+                                      المركز النشط حالياً: <strong className="text-orange-950 bg-white px-2.5 py-0.5 rounded-md border border-orange-200 shadow-2xs font-bold">{currentCenter || 'لم يتم اختيار مركز'}</strong>
+                                  </p>
                               </div>
+                              {onSwitchCenter && (
+                                  <button
+                                      type="button"
+                                      onClick={onSwitchCenter}
+                                      className="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
+                                  >
+                                      <span>شاشة تسجيل وتبديل المراكز</span>
+                                      <span className="text-sm text-orange-600">⇄</span>
+                                  </button>
+                              )}
                           </div>
 
                           {/* Add Center Inline */}
@@ -3546,16 +3595,35 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                                   </div>
                               )}
                               {localSettings?.facilities && localSettings.facilities.map((facName: string, idx: number) => {
+                                  const isActive = currentCenter && currentCenter.trim().toLowerCase() === facName.trim().toLowerCase();
                                   return (
                                       <div
                                           key={idx}
-                                          className="flex items-center justify-between p-3 rounded-xl border transition-all text-xs font-semibold bg-white border-slate-200 hover:border-orange-200"
+                                          className={`flex items-center justify-between p-3 rounded-xl border transition-all text-xs font-semibold ${
+                                              isActive
+                                                  ? 'bg-white border-orange-400 ring-1 ring-orange-200 shadow-2xs'
+                                                  : 'bg-white border-slate-200 hover:border-orange-200'
+                                          }`}
                                       >
                                           <div className="flex items-center gap-2.5">
-                                              <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+                                              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 ring-2 ring-emerald-200' : 'bg-slate-300'}`}></span>
                                               <span className="text-slate-800 font-bold text-sm">{facName}</span>
+                                              {isActive && (
+                                                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                                                      النشط حالياً
+                                                  </span>
+                                              )}
                                           </div>
                                           <div className="flex items-center gap-2">
+                                              {!isActive && onSelectCenter && (
+                                                  <button
+                                                      type="button"
+                                                      onClick={() => onSelectCenter(facName)}
+                                                      className="text-orange-700 hover:text-orange-900 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2.5 py-1 rounded-lg transition text-[11px] font-bold"
+                                                  >
+                                                      تفعيل المركز
+                                                  </button>
+                                              )}
                                               <button
                                                   type="button"
                                                   onClick={() => setCenterToDeleteInSettings(facName)}
@@ -3695,13 +3763,17 @@ import { TursoImportModal } from './src/components/TursoImportModal';
           );
       };
 
+      const ACTIVE_CENTER_KEY = 'who_hh_active_center';
+
       const App = () => {
          const [view, setView] = useState('form');
          const [editData, setEditData] = useState(null);
          const [settings, setSettings] = useState(null);
+         const [currentCenter, setCurrentCenter] = useState<string | null>(() => {
+             try { return localStorage.getItem(ACTIVE_CENTER_KEY) || null; } catch { return null; }
+         });
 
          useEffect(() => {
-             try { localStorage.removeItem('who_hh_active_center'); } catch {}
              let runner = window.google.script.run.withSuccessHandler((res) => {
                  setSettings(res || null);
              });
@@ -3712,6 +3784,28 @@ import { TursoImportModal } from './src/components/TursoImportModal';
              }
              runner.getSettings();
          }, []);
+
+         const handleSelectCenter = (centerName: string) => {
+             const clean = centerName.trim();
+             try { localStorage.setItem(ACTIVE_CENTER_KEY, clean); } catch {}
+             setCurrentCenter(clean);
+         };
+
+         const handleSwitchCenter = () => {
+             try { localStorage.removeItem(ACTIVE_CENTER_KEY); } catch {}
+             setCurrentCenter(null);
+         };
+
+         if (!currentCenter) {
+             return (
+                 <CenterLoginScreen
+                     onSelectCenter={handleSelectCenter}
+                     currentCenter={currentCenter}
+                     settings={settings}
+                     setSettings={setSettings}
+                 />
+             );
+         }
 
          const handleSetView = (nextView: string) => {
              if (nextView !== 'form') setEditData(null);
@@ -3731,6 +3825,29 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                                 <span className="font-bold text-slate-800 text-sm leading-tight">WHO Hand Hygiene</span>
                                 <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Compliance Tool</span>
                              </div>
+                         </div>
+
+                         {/* Active Center Badge and Switcher in Header */}
+                         <div className="flex items-center gap-2 font-['Cairo']" dir="rtl">
+                             <div className="bg-orange-50 border border-orange-200 text-orange-900 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                 <span className="text-slate-500 font-normal hidden sm:inline">المركز:</span>
+                                 <span className="text-orange-950 font-black truncate max-w-[150px] md:max-w-[220px]" title={currentCenter}>{currentCenter}</span>
+                             </div>
+                             <button
+                                 onClick={handleSwitchCenter}
+                                 className="px-2.5 py-1 text-xs font-bold bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-lg flex items-center gap-1 transition shadow-xs cursor-pointer active:scale-95"
+                                 title="تبديل المركز أو تسجيل الخروج منه"
+                             >
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600">
+                                     <polyline points="16 3 21 3 21 8"></polyline>
+                                     <line x1="4" y1="20" x2="21" y2="3"></line>
+                                     <polyline points="21 16 21 21 16 21"></polyline>
+                                     <line x1="15" y1="15" x2="21" y2="21"></line>
+                                     <line x1="4" y1="4" x2="9" y2="9"></line>
+                                 </svg>
+                                 <span className="text-[11px]">تبديل المركز</span>
+                             </button>
                          </div>
                       </div>
                       
@@ -3752,11 +3869,14 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                              initialData={editData}
                              onSubmitSuccess={() => { setEditData(null); setView('records'); }}
                              settings={settings}
+                             currentCenter={currentCenter}
+                             onSwitchCenter={handleSwitchCenter}
                          />
                      )}
                      {view === 'dashboard' && (
                          <Dashboard
                              settings={settings}
+                             currentCenter={currentCenter}
                          />
                      )}
                      {view === 'records' && (
@@ -3767,12 +3887,17 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                              }}
                              settings={settings}
                              setSettings={setSettings}
+                             currentCenter={currentCenter}
+                             onSwitchCenter={handleSwitchCenter}
                          />
                      )}
                      {view === 'settings' && (
                          <Settings
                              settings={settings}
                              setSettings={setSettings}
+                             currentCenter={currentCenter}
+                             onSelectCenter={handleSelectCenter}
+                             onSwitchCenter={handleSwitchCenter}
                          />
                      )}
                   </ErrorBoundary>
@@ -3784,7 +3909,7 @@ import { TursoImportModal } from './src/components/TursoImportModal';
                </footer>
 
                {/* Mobile Bottom Navigation */}
-               <MobileBottomNav currentView={view} setView={handleSetView} canAccessSettings={true} />
+               <MobileBottomNav currentView={view} setView={handleSetView} canAccessSettings={true} onSwitchCenter={handleSwitchCenter} currentCenter={currentCenter} />
             </div>
          );
       };
