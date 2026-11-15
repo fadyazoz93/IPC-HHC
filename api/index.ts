@@ -28,8 +28,19 @@ const SETTINGS_TTL_MS = 15 * 60 * 1000;    // 15 minutes TTL for settings
 const AUTH_SECRET = process.env.AUTH_SECRET || "who-hh-rbac-secret-2026-v1";
 
 let cachedObservations: CacheEntry<any[]> | null = null;
+let cachedFacilityObservations: Record<string, CacheEntry<any[]>> = {};
+let cachedFacilitiesSummary: CacheEntry<Array<{ name: string; sessionCount: number; rowCount: number }>> | null = null;
 let cachedSettings: CacheEntry<any> | null = null;
 let dbInitialized = false;
+
+function invalidateFacilityCaches(facilityKey?: string) {
+  cachedFacilitiesSummary = null;
+  if (facilityKey) {
+    delete cachedFacilityObservations[facilityKey.trim().toLowerCase()];
+  } else {
+    cachedFacilityObservations = {};
+  }
+}
 
 const DEFAULT_PASSWORDS = {
   adminPassword: "admin123",
@@ -248,7 +259,12 @@ async function initializeDatabaseOnce() {
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_prof_cat ON Observations("Professional Cat.");`);
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_date_time ON Observations("Session Date", "Start Time");`);
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_composite ON Observations("Session ID", "Opportunity No", "Column No");`);
+    await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_facility_session ON Observations("Facility", "Session ID");`);
+    await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_facility_id ON Observations("Facility", id DESC);`);
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_settings_id ON Settings(id);`);
+    try {
+      await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_facility_lower_trim ON Observations(LOWER(TRIM("Facility")));`);
+    } catch (e) { /* ignore if SQLite version lacks expression index support */ }
 
     dbInitialized = true;
     console.log("[Database] Schema & Mandatory Indexes Initialized Successfully.");
@@ -549,13 +565,14 @@ export default async function handler(req: any, res: any) {
         const now = Date.now();
         const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
         const offsetParam = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+        const facilityParam = req.query.facility ? String(req.query.facility).trim() : '';
+        const facKey = facilityParam.toLowerCase();
 
-        // 1. Check In-Memory Cache first (0 Cloud Row Reads on Hit)
+        // 1. Check Global In-Memory Cache first (0 Cloud Row Reads on Hit)
         if (cachedObservations && now < cachedObservations.expiresAt) {
           let records = cachedObservations.data;
-          const facilityParam = req.query.facility ? String(req.query.facility).trim() : '';
           if (facilityParam) {
-            records = records.filter(r => (getRowValue(r, "Facility") || '').trim().toLowerCase() === facilityParam.toLowerCase());
+            records = records.filter(r => (getRowValue(r, "Facility") || '').trim().toLowerCase() === facKey);
           }
           if (limitParam && limitParam > 0) {
             records = records.slice(offsetParam, offsetParam + limitParam);
@@ -563,14 +580,28 @@ export default async function handler(req: any, res: any) {
           return res.status(200).json(records);
         }
 
-        // 2. Cache Miss: Query Cloud DB with explicit columns and indexed sorting
+        // 2. Check Per-Facility In-Memory Cache (0 Cloud Row Reads on Hit)
+        if (facilityParam && cachedFacilityObservations[facKey] && now < cachedFacilityObservations[facKey].expiresAt) {
+          let records = cachedFacilityObservations[facKey].data;
+          if (limitParam && limitParam > 0) {
+            records = records.slice(offsetParam, offsetParam + limitParam);
+          }
+          return res.status(200).json(records);
+        }
+
+        // 3. Cache Miss: Query Cloud DB with explicit columns and indexed filtering
         const queryLimit = limitParam && limitParam > 0 ? limitParam : 2500;
         const queryOffset = offsetParam || 0;
 
-        const result = await getDb().execute({
-          sql: `SELECT ${OBSERVATION_EXPLICIT_COLUMNS} FROM Observations ORDER BY id DESC LIMIT ? OFFSET ?`,
-          args: [queryLimit, queryOffset]
-        });
+        const result = facilityParam
+          ? await getDb().execute({
+              sql: `SELECT ${OBSERVATION_EXPLICIT_COLUMNS} FROM Observations WHERE LOWER(TRIM("Facility")) = LOWER(TRIM(?)) ORDER BY id DESC LIMIT ? OFFSET ?`,
+              args: [facilityParam, queryLimit, queryOffset]
+            })
+          : await getDb().execute({
+              sql: `SELECT ${OBSERVATION_EXPLICIT_COLUMNS} FROM Observations ORDER BY id DESC LIMIT ? OFFSET ?`,
+              args: [queryLimit, queryOffset]
+            });
 
         // Parse rows using exact column names
         const records = result.rows.map((row: any) => {
@@ -584,78 +615,113 @@ export default async function handler(req: any, res: any) {
         // Reindex session numbers in memory
         reindexInMemorySessions(records);
 
-        // Populate in-memory cache
-        cachedObservations = {
-          data: records,
-          cachedAt: now,
-          expiresAt: now + OBSERVATIONS_TTL_MS
-        };
-
-        const facilityParam = req.query.facility ? String(req.query.facility).trim() : '';
-        let filteredRecords = records;
+        // Populate appropriate in-memory cache (only full unpaginated queries populate global cache)
         if (facilityParam) {
-          filteredRecords = filteredRecords.filter(r => (getRowValue(r, "Facility") || '').trim().toLowerCase() === facilityParam.toLowerCase());
+          if (!limitParam && queryOffset === 0) {
+            cachedFacilityObservations[facKey] = {
+              data: records,
+              cachedAt: now,
+              expiresAt: now + OBSERVATIONS_TTL_MS
+            };
+          }
+        } else if (!limitParam && queryOffset === 0) {
+          cachedObservations = {
+            data: records,
+            cachedAt: now,
+            expiresAt: now + OBSERVATIONS_TTL_MS
+          };
         }
 
-        return res.status(200).json(filteredRecords);
+        return res.status(200).json(records);
       } 
 
       if (action === 'getFacilitiesSummary') {
+        const now = Date.now();
         const currentSettings = await getFullSettingsCached();
         const configuredFacilities: string[] = currentSettings.facilities || [];
 
-        // Count sessions and rows per facility in DB
-        let countsRes: any = { rows: [] };
-        try {
-          countsRes = await getDb().execute(`
-            SELECT "Facility" as fac, COUNT(DISTINCT "Session ID") as sessionCount, COUNT(*) as rowCount
-            FROM Observations
-            GROUP BY "Facility"
-          `);
-        } catch (e) {
-          console.error("Error reading facilities counts:", e);
+        // 0. Check summary cache first (0 DB reads on hit)
+        if (cachedFacilitiesSummary && now < cachedFacilitiesSummary.expiresAt) {
+          return res.status(200).json({
+            facilities: cachedFacilitiesSummary.data,
+            settings: sanitizeSettingsForRole(currentSettings, 'admin')
+          });
         }
 
-        const summaryMap: Record<string, { sessionCount: number; rowCount: number }> = {};
-        countsRes.rows.forEach((r: any) => {
-          const f = getRowValue(r, "Facility") || getRowValue(r, "fac");
-          if (f && f.trim()) {
-            summaryMap[f.trim().toLowerCase()] = {
-              sessionCount: Number(getRowValue(r, "sessionCount") || 0),
-              rowCount: Number(getRowValue(r, "rowCount") || 0)
-            };
+        const summaryMap: Record<string, { rawName: string; sessionIds: Set<string>; sessionCount: number; rowCount: number }> = {};
+
+        // 1. If global observations cache is already warm, compute in-memory with 0 DB reads
+        if (cachedObservations && now < cachedObservations.expiresAt) {
+          cachedObservations.data.forEach((r: any) => {
+            const f = (getRowValue(r, "Facility") || '').trim();
+            if (!f) return;
+            const key = f.toLowerCase();
+            if (!summaryMap[key]) {
+              summaryMap[key] = { rawName: f, sessionIds: new Set(), sessionCount: 0, rowCount: 0 };
+            }
+            const sid = getRowValue(r, "Session ID");
+            if (sid) summaryMap[key].sessionIds.add(sid);
+            summaryMap[key].rowCount++;
+            summaryMap[key].sessionCount = summaryMap[key].sessionIds.size;
+          });
+        } else {
+          // 2. Otherwise query covering index idx_obs_facility_session (minimal index-only read)
+          try {
+            const countsRes = await getDb().execute(`
+              SELECT "Facility" as fac, COUNT(DISTINCT "Session ID") as sessionCount, COUNT(*) as rowCount
+              FROM Observations
+              GROUP BY "Facility"
+            `);
+            countsRes.rows.forEach((r: any) => {
+              const f = (getRowValue(r, "Facility") || getRowValue(r, "fac")).trim();
+              if (f) {
+                summaryMap[f.toLowerCase()] = {
+                  rawName: f,
+                  sessionIds: new Set(),
+                  sessionCount: Number(getRowValue(r, "sessionCount") || 0),
+                  rowCount: Number(getRowValue(r, "rowCount") || 0)
+                };
+              }
+            });
+          } catch (e) {
+            console.error("Error reading facilities counts:", e);
           }
-        });
+        }
 
         const list: Array<{ name: string; sessionCount: number; rowCount: number }> = [];
         const seen = new Set<string>();
 
-        // 1. Add configured facilities first
+        // 3. Add configured facilities first
         configuredFacilities.forEach(name => {
           const trimmed = String(name || '').trim();
           if (trimmed && !seen.has(trimmed.toLowerCase())) {
             seen.add(trimmed.toLowerCase());
-            const stat = summaryMap[trimmed.toLowerCase()] || { sessionCount: 0, rowCount: 0 };
+            const stat = summaryMap[trimmed.toLowerCase()];
             list.push({
               name: trimmed,
-              sessionCount: stat.sessionCount,
-              rowCount: stat.rowCount
+              sessionCount: stat ? stat.sessionCount : 0,
+              rowCount: stat ? stat.rowCount : 0
             });
           }
         });
 
-        // 2. Also include any facilities discovered in Observations that weren't in Settings list
-        countsRes.rows.forEach((r: any) => {
-          const f = (getRowValue(r, "Facility") || getRowValue(r, "fac")).trim();
-          if (f && !seen.has(f.toLowerCase())) {
-            seen.add(f.toLowerCase());
+        // 4. Also include any facilities discovered in Observations that weren't in Settings list
+        Object.keys(summaryMap).forEach(key => {
+          if (!seen.has(key)) {
+            seen.add(key);
             list.push({
-              name: f,
-              sessionCount: Number(getRowValue(r, "sessionCount") || 0),
-              rowCount: Number(getRowValue(r, "rowCount") || 0)
+              name: summaryMap[key].rawName,
+              sessionCount: summaryMap[key].sessionCount,
+              rowCount: summaryMap[key].rowCount
             });
           }
         });
+
+        cachedFacilitiesSummary = {
+          data: list,
+          cachedAt: now,
+          expiresAt: now + OBSERVATIONS_TTL_MS
+        };
 
         return res.status(200).json({
           facilities: list,
@@ -798,6 +864,7 @@ export default async function handler(req: any, res: any) {
           cachedObservations.cachedAt = Date.now();
           cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
         }
+        invalidateFacilityCaches(sessionData.facility);
 
         return res.status(200).json({ success: true, count: rowsInserted, sessionId: targetId });
       }
@@ -836,6 +903,7 @@ export default async function handler(req: any, res: any) {
           cachedObservations.cachedAt = Date.now();
           cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
         }
+        invalidateFacilityCaches();
 
         return res.status(200).json({ success: true, count: deleteRes.rowsAffected, sessionId: targetId });
       }
@@ -861,6 +929,7 @@ export default async function handler(req: any, res: any) {
           cachedObservations.cachedAt = Date.now();
           cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
         }
+        invalidateFacilityCaches();
 
         return res.status(200).json({ success: true, count: totalCount, months: targetMonths });
       }
@@ -915,6 +984,7 @@ export default async function handler(req: any, res: any) {
           cachedObservations.cachedAt = Date.now();
           cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
         }
+        invalidateFacilityCaches();
 
         return res.status(200).json({
           success: true,
@@ -950,6 +1020,7 @@ export default async function handler(req: any, res: any) {
           cachedObservations.cachedAt = Date.now();
           cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
         }
+        invalidateFacilityCaches();
 
         return res.status(200).json({
           success: true,
@@ -1285,6 +1356,7 @@ export default async function handler(req: any, res: any) {
 
         // 5. Invalidate In-Memory Cache so observations are fresh on next load
         cachedObservations = null;
+        invalidateFacilityCaches();
 
         return res.status(200).json({
           success: true,
@@ -1311,6 +1383,7 @@ export default async function handler(req: any, res: any) {
           existing.push(facility);
           currentSettings.facilities = existing;
           const updated = await saveSettingsToDb(currentSettings, currentSettings);
+          cachedFacilitiesSummary = null;
           return res.status(200).json({
             success: true,
             facility,
@@ -1334,7 +1407,7 @@ export default async function handler(req: any, res: any) {
           return res.status(400).json({ success: false, error: "يرجى تحديد اسم المركز المراد حذفه" });
         }
 
-        // 1. Permanently delete all observations belonging to this center
+        // 1. Permanently delete all observations belonging to this center (uses idx_obs_facility_lower_trim)
         const deleteRes = await getDb().execute({
           sql: 'DELETE FROM Observations WHERE LOWER(TRIM("Facility")) = LOWER(TRIM(?))',
           args: [facility]
@@ -1348,8 +1421,16 @@ export default async function handler(req: any, res: any) {
         );
         const updatedSettings = await saveSettingsToDb(currentSettings, currentSettings);
 
-        // 3. Invalidate in-memory cache so fresh queries do not serve deleted records
-        cachedObservations = null;
+        // 3. Optimistically mutate caches in-memory instead of forcing a full DB re-read
+        const targetLower = facility.toLowerCase();
+        if (cachedObservations) {
+          cachedObservations.data = cachedObservations.data.filter(
+            r => (getRowValue(r, "Facility") || '').trim().toLowerCase() !== targetLower
+          );
+          cachedObservations.cachedAt = Date.now();
+          cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
+        }
+        invalidateFacilityCaches(facility);
 
         console.log(`[Database] Deleted facility "${facility}" and ${deletedCount} associated observation rows.`);
 

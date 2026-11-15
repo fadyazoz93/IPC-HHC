@@ -727,7 +727,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                 setSessionsLoaded(true);
             }).withFailureHandler(() => {
                 setSessionsLoaded(true);
-            }).getObservationData();
+            }).getObservationData(currentCenter ? { facility: currentCenter } : undefined);
         };
 
         useEffect(() => {
@@ -1072,7 +1072,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                 setFilterMonth(String(scopedRows[0]['Session Date']).slice(0, 7));
              }
              setLoading(false); 
-          }).getObservationData();
+          }).getObservationData(currentCenter ? { facility: currentCenter } : undefined);
         }, [currentCenter]);
         
         if (!BarChart || !XAxis || !YAxis) return <div className="p-10 text-center text-red-500 border border-red-200 bg-red-50 rounded-lg m-4">Charts library failed to load. Please check your internet connection or try again.</div>;
@@ -1781,7 +1781,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
               console.error(err);
               alert("تعذر الاتصال بقاعدة البيانات. فضلا تأكد من الرابط (API_URL) وتأكد من نشر التحديثات فى Google Apps Script.\n\n" + String(err));
               setLoading(false);
-           }).getObservationData();
+           }).getObservationData(currentCenter ? { facility: currentCenter } : undefined);
         };
 
         useEffect(() => { fetchRecords(); }, [currentCenter]);
