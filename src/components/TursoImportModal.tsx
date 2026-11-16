@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 
+export interface TursoFacilityStat {
+  name: string;
+  sessionCount: number;
+  rowCount: number;
+  newSessions: number;
+  existingSessions: number;
+}
+
 export interface TursoTestResult {
   success: boolean;
   totalRows: number;
@@ -9,14 +17,17 @@ export interface TursoTestResult {
   minDate: string | null;
   maxDate: string | null;
   facilities: string[];
+  facilityStats?: TursoFacilityStat[];
   departments: string[];
   hasSettings: boolean;
+  targetFacility?: string | null;
   message?: string;
   error?: string;
 }
 
 export interface TursoImportResult {
   success: boolean;
+  targetFacility?: string;
   importedSessions: number;
   updatedSessions: number;
   skippedSessions: number;
@@ -31,6 +42,7 @@ interface TursoImportModalProps {
   onClose: () => void;
   onImportSuccess: () => void;
   onNavigateToRecords?: () => void;
+  currentCenter?: string | null;
 }
 
 export const TursoImportModal: React.FC<TursoImportModalProps> = ({
@@ -38,6 +50,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
   onClose,
   onImportSuccess,
   onNavigateToRecords,
+  currentCenter,
 }) => {
   const [tursoUrl, setTursoUrl] = useState('');
   const [tursoAuthToken, setTursoAuthToken] = useState('');
@@ -46,6 +59,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<TursoTestResult | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
+  const [sourceFacilityFilter, setSourceFacilityFilter] = useState<string>('__ALL__');
 
   const [importMode, setImportMode] = useState<'merge_skip_existing' | 'merge_overwrite_existing' | 'overwrite_all'>('merge_skip_existing');
   const [importSettings, setImportSettings] = useState(true);
@@ -55,6 +69,8 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
   const [importError, setImportError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const activeCenterName = (currentCenter || '').trim();
 
   const handleTestConnection = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -75,6 +91,15 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
         setIsTesting(false);
         if (res && res.success) {
           setTestResult(res);
+          const remoteFacs: string[] = res.facilities || [];
+          if (remoteFacs.length > 1) {
+            const matched = activeCenterName
+              ? remoteFacs.find(f => f.trim().toLowerCase() === activeCenterName.toLowerCase())
+              : undefined;
+            setSourceFacilityFilter(matched || remoteFacs[0]);
+          } else {
+            setSourceFacilityFilter('__ALL__');
+          }
         } else {
           setTestError(res?.error || 'فشل الاتصال بقاعدة البيانات. يرجى التحقق من الرابط والرمز.');
         }
@@ -86,8 +111,21 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
       .testTursoConnection({
         tursoUrl: cleanUrl,
         tursoAuthToken: tursoAuthToken.trim(),
+        targetFacility: activeCenterName,
       });
   };
+
+  const selectedStat =
+    testResult?.facilityStats && sourceFacilityFilter !== '__ALL__'
+      ? testResult.facilityStats.find(
+          (f) => f.name.trim().toLowerCase() === sourceFacilityFilter.trim().toLowerCase()
+        )
+      : null;
+
+  const previewTotalSessions = selectedStat ? selectedStat.sessionCount : (testResult?.totalSessions || 0);
+  const previewTotalRows = selectedStat ? selectedStat.rowCount : (testResult?.totalRows || 0);
+  const previewNewSessions = selectedStat ? selectedStat.newSessions : (testResult?.newSessions || 0);
+  const previewExistingSessions = selectedStat ? selectedStat.existingSessions : (testResult?.existingSessions || 0);
 
   const handleExecuteImport = () => {
     const cleanUrl = tursoUrl.trim();
@@ -95,10 +133,14 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
       setImportError('يرجى إدخال رابط قاعدة بيانات Turso');
       return;
     }
+    if (!activeCenterName) {
+      setImportError('يرجى تحديد المركز النشط أولاً قبل استيراد البيانات.');
+      return;
+    }
 
     if (importMode === 'overwrite_all') {
       const confirmOverwrite = window.confirm(
-        'تحذير: لقد اخترت "استبدال شامل"، وسيتم حذف كافة السجلات الموجودة في القاعدة الحالية واستبدالها بسجلات القاعدة السابقة. هل تريد الاستمرار بالتأكيد؟'
+        `تحذير: لقد اخترت "استبدال كامل لبيانات هذا المركز"، وسيتم حذف السجلات الحالية الخاصة بالمركز "${activeCenterName}" فقط واستبدالها بالسجلات المستوردة (ولن تتأثر بيانات أي مركز آخر). هل تريد الاستمرار بالتأكيد؟`
       );
       if (!confirmOverwrite) return;
     }
@@ -125,6 +167,8 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
         tursoAuthToken: tursoAuthToken.trim(),
         importMode,
         importSettings,
+        targetFacility: activeCenterName,
+        sourceFacilityFilter,
       });
   };
 
@@ -133,6 +177,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
     setTestError(null);
     setImportResult(null);
     setImportError(null);
+    setSourceFacilityFilter('__ALL__');
   };
 
   return (
@@ -155,10 +200,10 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-bold leading-tight">
-                جلب السجلات من قاعدة بيانات Turso سابقة
+                جلب السجلات السابقة للمركز من قاعدة Turso
               </h3>
               <p className="text-xs text-purple-200 mt-1 leading-relaxed">
-                استيراد سجلات المركز السابقة والملاحظات القديمة ودمجها مع القاعدة الحالية دون تكرار
+                استيراد السجلات الخاصة بالمركز النشط فقط بشكل معزول تماماً دون أي دمج أو تأثير على المراكز الأخرى
               </p>
             </div>
           </div>
@@ -176,6 +221,22 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-5 sm:p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+          {/* Active Center Isolation Banner */}
+          {activeCenterName && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-orange-950 font-bold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                <span>المركز المستهدف للاستيراد:</span>
+                <span className="bg-white border border-orange-300 px-2.5 py-0.5 rounded-lg text-orange-900 font-black">
+                  {activeCenterName}
+                </span>
+              </div>
+              <span className="text-[11px] text-orange-700 font-semibold hidden sm:inline">
+                استيراد معزول لهذا المركز فقط
+              </span>
+            </div>
+          )}
+
           {/* SUCCESS FINISH STATE */}
           {importResult && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-emerald-900 space-y-4 animate-fade-in">
@@ -185,7 +246,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-base text-emerald-800">
-                    تم استيراد سجلات المركز بنجاح!
+                    تم استيراد سجلات المركز "{importResult.targetFacility || activeCenterName}" بنجاح!
                   </h4>
                   <p className="text-xs text-emerald-700 mt-0.5">{importResult.message}</p>
                 </div>
@@ -206,7 +267,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                   <div className="text-lg font-black text-emerald-900 mt-0.5">{importResult.updatedSessions}</div>
                 </div>
                 <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-200">
-                  <div className="text-[11px] text-emerald-600 font-medium">جلسات سابقة مكررة</div>
+                  <div className="text-[11px] text-emerald-600 font-medium">جلسات مكررة تم تخطيها</div>
                   <div className="text-lg font-black text-emerald-900 mt-0.5">{importResult.skippedSessions}</div>
                 </div>
               </div>
@@ -214,7 +275,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
               {importResult.mergedSettingsCount !== undefined && importResult.mergedSettingsCount > 0 && (
                 <div className="text-xs bg-emerald-100/60 text-emerald-800 p-2.5 rounded-lg flex items-center gap-2">
                   <span>🏢</span>
-                  <span>تم دمج {importResult.mergedSettingsCount} عنصر جديد (مرافق وأقسام وملاحظين) في قوائم الإعدادات.</span>
+                  <span>تمت إضافة {importResult.mergedSettingsCount} عنصر إلى قوائم المركز "{importResult.targetFacility || activeCenterName}" فقط دون المساس بالمراكز الأخرى.</span>
                 </div>
               )}
 
@@ -353,23 +414,48 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                     </span>
                   </div>
 
+                  {/* Source Facility Selector when remote DB has multiple facilities */}
+                  {testResult.facilities && testResult.facilities.length > 1 && (
+                    <div className="bg-white p-3.5 rounded-xl border-2 border-purple-300 space-y-2">
+                      <label className="block text-xs font-bold text-purple-950">
+                        🏥 تحتوي القاعدة السابقة على عدة مراكز — حدد بيانات المركز المطلوب استيرادها إلى "{activeCenterName}" فقط:
+                      </label>
+                      <select
+                        value={sourceFacilityFilter}
+                        onChange={(e) => setSourceFacilityFilter(e.target.value)}
+                        disabled={isImporting}
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 bg-slate-50 focus:border-purple-600 outline-none"
+                      >
+                        {(testResult.facilityStats || testResult.facilities.map(name => ({ name, sessionCount: 0, rowCount: 0 }))).map((f: any) => (
+                          <option key={f.name} value={f.name}>
+                            {f.name}{f.sessionCount ? ` (${f.sessionCount} جلسة / ${f.rowCount} سطر)` : ''}
+                          </option>
+                        ))}
+                        <option value="__ALL__">استيراد جميع السجلات وتعيينها للمركز "{activeCenterName}" فقط</option>
+                      </select>
+                      <p className="text-[11px] text-slate-500">
+                        لن يتم إنشاء مراكز جديدة أو دمج البيانات مع المراكز الأخرى؛ سيتم استيراد سجلات الاختيار المحدد لحساب "{activeCenterName}" فقط.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Stat Metrics */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                     <div className="bg-white p-2.5 rounded-xl border border-purple-200/80 shadow-xs">
-                      <div className="text-[10px] text-slate-500 font-bold">إجمالي الجلسات</div>
-                      <div className="text-lg font-black text-purple-900 mt-0.5">{testResult.totalSessions}</div>
+                      <div className="text-[10px] text-slate-500 font-bold">إجمالي الجلسات المحددة</div>
+                      <div className="text-lg font-black text-purple-900 mt-0.5">{previewTotalSessions}</div>
                     </div>
                     <div className="bg-white p-2.5 rounded-xl border border-purple-200/80 shadow-xs">
                       <div className="text-[10px] text-slate-500 font-bold">أسطر الملاحظات</div>
-                      <div className="text-lg font-black text-purple-900 mt-0.5">{testResult.totalRows}</div>
+                      <div className="text-lg font-black text-purple-900 mt-0.5">{previewTotalRows}</div>
                     </div>
                     <div className="bg-white p-2.5 rounded-xl border border-green-200 shadow-xs">
-                      <div className="text-[10px] text-green-700 font-bold">جلسات جديدة تماماً</div>
-                      <div className="text-lg font-black text-green-700 mt-0.5">+{testResult.newSessions}</div>
+                      <div className="text-[10px] text-green-700 font-bold">جلسات جديدة لهذا المركز</div>
+                      <div className="text-lg font-black text-green-700 mt-0.5">+{previewNewSessions}</div>
                     </div>
                     <div className="bg-white p-2.5 rounded-xl border border-amber-200 shadow-xs">
-                      <div className="text-[10px] text-amber-700 font-bold">جلسات موجودة مسبقاً</div>
-                      <div className="text-lg font-black text-amber-700 mt-0.5">{testResult.existingSessions}</div>
+                      <div className="text-[10px] text-amber-700 font-bold">موجودة مسبقاً بالمركز</div>
+                      <div className="text-lg font-black text-amber-700 mt-0.5">{previewExistingSessions}</div>
                     </div>
                   </div>
 
@@ -383,7 +469,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                     )}
                     {testResult.facilities.length > 0 && (
                       <div className="flex items-start gap-1.5">
-                        <span className="font-bold text-slate-800 shrink-0">🏥 المراكز / المستشفيات:</span>
+                        <span className="font-bold text-slate-800 shrink-0">🏥 المراكز الموجودة بالقاعدة السابقة:</span>
                         <span className="text-slate-600 truncate">{testResult.facilities.join('، ')}</span>
                       </div>
                     )}
@@ -397,7 +483,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
 
                   {/* IMPORT OPTIONS */}
                   <div className="pt-2 border-t border-purple-200/80 space-y-3">
-                    <div className="font-bold text-xs text-slate-800">خيارات الدمج والاستيراد:</div>
+                    <div className="font-bold text-xs text-slate-800">طريقة استيراد البيانات للمركز "{activeCenterName}":</div>
 
                     <div className="space-y-2">
                       <label className="flex items-start gap-2.5 p-2.5 rounded-xl border border-purple-200 bg-white hover:bg-purple-50/40 cursor-pointer transition-colors text-xs">
@@ -411,13 +497,13 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                         />
                         <div>
                           <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                            <span>دمج السجلات وإضافة الجلسات الجديدة فقط</span>
+                            <span>استيراد الجلسات الجديدة لهذا المركز فقط (تخطي المكرر)</span>
                             <span className="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.2 rounded-full">
                               موصى به
                             </span>
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5">
-                            يتم إضافة {testResult.newSessions} جلسة جديدة للقاعدة الحالية، وتخطي الجلسات المكررة منعاً لأي تعارض.
+                            يضيف {previewNewSessions} جلسة جديدة لحساب "{activeCenterName}" فقط دون المساس بسجلات أي مركز آخر.
                           </div>
                         </div>
                       </label>
@@ -433,10 +519,10 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                         />
                         <div>
                           <div className="font-bold text-slate-800">
-                            تحديث وإضافة (استبدال الجلسات المتطابقة بالبيانات السابقة + إضافة الجديدة)
+                            تحديث وإضافة جلسات هذا المركز فقط
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5">
-                            مفيد إذا كانت بيانات القاعدة السابقة أحدث أو تود إعادة مزامنة الجلسات المتطابقة.
+                            يحدث الجلسات المتطابقة داخل "{activeCenterName}" فقط ويضيف الجلسات الجديدة دون التأثير على باقي المراكز.
                           </div>
                         </div>
                       </label>
@@ -452,10 +538,10 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                         />
                         <div>
                           <div className="font-bold text-red-700">
-                            استبدال كامل (حذف السجلات الحالية واستبدالها بسجلات القاعدة السابقة)
+                            استبدال كامل لسجلات "{activeCenterName}" فقط
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5">
-                            يفرغ جدول السجلات الحالي بالكامل ويضع مكانه سجلات القاعدة السابقة.
+                            يحذف السجلات الحالية لهذا المركز فقط ويستبدلها بالمستوردة، مع بقاء بيانات جميع المراكز الأخرى سليمة تماماً.
                           </div>
                         </div>
                       </label>
@@ -468,7 +554,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                         onChange={(e) => setImportSettings(e.target.checked)}
                         className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
                       />
-                      <span>دمج المرافق والأقسام والخدمات والملاحظين في القوائم المنسدلة للإعدادات تلقائياً</span>
+                      <span>استيراد الأقسام والعنابر والخدمات والملاحظين لقوائم المركز "{activeCenterName}" فقط</span>
                     </label>
                   </div>
 
@@ -493,11 +579,11 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          <span>جاري جلب السجلات ونقلها إلى القاعدة الحالية...</span>
+                          <span>جاري استيراد سجلات المركز "{activeCenterName}"...</span>
                         </>
                       ) : (
                         <>
-                          <span>🚀 بدء استيراد {importMode === 'merge_skip_existing' ? testResult.newSessions : testResult.totalSessions} جلسة إلى القاعدة الحالية</span>
+                          <span>🚀 استيراد {importMode === 'merge_skip_existing' ? previewNewSessions : previewTotalSessions} جلسة لحساب "{activeCenterName}" فقط</span>
                         </>
                       )}
                     </button>

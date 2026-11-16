@@ -1218,6 +1218,7 @@ export default async function handler(req: any, res: any) {
         const payload = typeof bodyData === 'string' ? JSON.parse(bodyData) : (bodyData || {});
         const rawUrl = String(payload.tursoUrl || payload.url || '').trim();
         const rawToken = String(payload.tursoAuthToken || payload.authToken || '').trim();
+        const targetFacility = String(payload.targetFacility || payload.facility || '').trim();
 
         if (!rawUrl) {
           return res.status(200).json({ success: false, error: "يرجى إدخال رابط قاعدة بيانات Turso" });
@@ -1266,46 +1267,92 @@ export default async function handler(req: any, res: any) {
               minDate: null,
               maxDate: null,
               facilities: [],
+              facilityStats: [],
               departments: [],
               hasSettings: false,
+              targetFacility: targetFacility || null,
               message: "تم الاتصال بنجاح، لكن جدول السجلات فارغ حالياً في القاعدة السابقة."
             });
           }
 
-          // Read distinct sessions metadata
+          // Read session + facility row counts from remote DB
           const sessionsMeta = await remoteDb.execute(`
-            SELECT DISTINCT "Session ID" as sid, "Session Date" as sdate, "Facility" as fac, "Department" as dept
+            SELECT "Session ID" as sid, "Session Date" as sdate, "Facility" as fac, "Department" as dept
             FROM Observations
           `);
 
           const remoteSessionIds = new Set<string>();
-          const facilitiesSet = new Set<string>();
+          const facilitiesMap = new Map<string, { name: string; sessions: Set<string>; rowCount: number }>();
           const departmentsSet = new Set<string>();
           const dates: string[] = [];
 
-          sessionsMeta.rows.forEach((row: any) => {
-            const sid = getRowValue(row, "Session ID") || getRowValue(row, "sid");
-            const sdate = getRowValue(row, "Session Date") || getRowValue(row, "sdate");
-            const fac = getRowValue(row, "Facility") || getRowValue(row, "fac");
-            const dept = getRowValue(row, "Department") || getRowValue(row, "dept");
-
-            if (sid) remoteSessionIds.add(sid);
-            if (sdate && sdate.length >= 7) dates.push(sdate);
-            if (fac) facilitiesSet.add(fac.trim());
-            if (dept) departmentsSet.add(dept.trim());
-          });
-
-          // Check how many exist in current DB
-          const currentSidsRes = await getDb().execute(`SELECT DISTINCT "Session ID" as sid FROM Observations`);
+          // Check existing Session IDs ONLY within the target facility (never mix with other centers!)
+          const currentSidsRes = targetFacility
+            ? await getDb().execute({
+                sql: `SELECT DISTINCT "Session ID" as sid FROM Observations WHERE LOWER(TRIM("Facility")) = LOWER(TRIM(?))`,
+                args: [targetFacility]
+              })
+            : await getDb().execute(`SELECT DISTINCT "Session ID" as sid FROM Observations`);
           const currentSids = new Set(
             currentSidsRes.rows.map((r: any) => getRowValue(r, "Session ID") || getRowValue(r, "sid")).filter(Boolean)
           );
 
+          const facHash = targetFacility
+            ? crypto.createHash('md5').update(targetFacility.toLowerCase()).digest('hex').slice(0, 8)
+            : '';
+
+          const sessionFacilityMap = new Map<string, string>();
+          sessionsMeta.rows.forEach((row: any) => {
+            const sid = getRowValue(row, "Session ID") || getRowValue(row, "sid");
+            const sdate = getRowValue(row, "Session Date") || getRowValue(row, "sdate");
+            const fac = (getRowValue(row, "Facility") || getRowValue(row, "fac")).trim();
+            const dept = getRowValue(row, "Department") || getRowValue(row, "dept");
+
+            if (sid) {
+              remoteSessionIds.add(sid);
+              sessionFacilityMap.set(sid, fac);
+            }
+            if (sdate && sdate.length >= 7) dates.push(sdate);
+            if (dept) departmentsSet.add(dept.trim());
+
+            if (fac) {
+              const fk = fac.toLowerCase();
+              if (!facilitiesMap.has(fk)) {
+                facilitiesMap.set(fk, { name: fac, sessions: new Set(), rowCount: 0 });
+              }
+              const entry = facilitiesMap.get(fk)!;
+              entry.rowCount++;
+              if (sid) entry.sessions.add(sid);
+            }
+          });
+
+          const isSidExistingInTarget = (sid: string) => {
+            if (currentSids.has(sid)) return true;
+            if (facHash && currentSids.has(`${sid}::${facHash}`)) return true;
+            return false;
+          };
+
           let newSessionsCount = 0;
           let existingSessionsCount = 0;
           remoteSessionIds.forEach(sid => {
-            if (currentSids.has(sid)) existingSessionsCount++;
+            if (isSidExistingInTarget(sid)) existingSessionsCount++;
             else newSessionsCount++;
+          });
+
+          const facilityStats = Array.from(facilitiesMap.values()).map(f => {
+            let newCount = 0;
+            let existCount = 0;
+            f.sessions.forEach(sid => {
+              if (isSidExistingInTarget(sid)) existCount++;
+              else newCount++;
+            });
+            return {
+              name: f.name,
+              sessionCount: f.sessions.size,
+              rowCount: f.rowCount,
+              newSessions: newCount,
+              existingSessions: existCount
+            };
           });
 
           dates.sort();
@@ -1329,9 +1376,11 @@ export default async function handler(req: any, res: any) {
             existingSessions: existingSessionsCount,
             minDate,
             maxDate,
-            facilities: Array.from(facilitiesSet).filter(Boolean),
+            facilities: facilityStats.map(f => f.name),
+            facilityStats,
             departments: Array.from(departmentsSet).filter(Boolean),
-            hasSettings
+            hasSettings,
+            targetFacility: targetFacility || null
           });
         } catch (dbErr: any) {
           console.error("Test remote Turso error:", dbErr);
@@ -1348,9 +1397,15 @@ export default async function handler(req: any, res: any) {
         const rawToken = String(payload.tursoAuthToken || payload.authToken || '').trim();
         const importMode = payload.importMode || 'merge_skip_existing';
         const importSettings = Boolean(payload.importSettings);
+        const targetFacility = String(payload.targetFacility || payload.facility || '').trim();
+        const sourceFacilityFilter = String(payload.sourceFacilityFilter || '').trim();
 
         if (!rawUrl) {
           return res.status(200).json({ success: false, error: "يرجى إدخال رابط قاعدة بيانات Turso" });
+        }
+
+        if (!targetFacility) {
+          return res.status(200).json({ success: false, error: "يرجى تحديد المركز النشط أولاً قبل استيراد البيانات لمنع تداخل المراكز." });
         }
 
         const cleanUrl = normalizeTursoUrl(rawUrl);
@@ -1389,20 +1444,50 @@ export default async function handler(req: any, res: any) {
           });
         }
 
-        // 2. Group remote rows by Session ID
+        // 2. Filter rows by sourceFacilityFilter if specified (prevents pulling other centers from multi-center backup)
+        const filterLower = sourceFacilityFilter && sourceFacilityFilter !== '__ALL__' ? sourceFacilityFilter.toLowerCase() : '';
+        const filteredRemoteRows = filterLower
+          ? remoteResult.rows.filter((row: any) => (getRowValue(row, "Facility") || '').trim().toLowerCase() === filterLower)
+          : remoteResult.rows;
+
+        if (filteredRemoteRows.length === 0) {
+          return res.status(200).json({
+            success: true,
+            importedRows: 0,
+            importedSessions: 0,
+            skippedSessions: 0,
+            updatedSessions: 0,
+            message: `لا توجد سجلات مطابقة للمركز المحدد ("${sourceFacilityFilter}") في القاعدة السابقة.`
+          });
+        }
+
+        // 3. Group filtered remote rows by original Session ID
         const remoteSessionsMap = new Map<string, any[]>();
-        remoteResult.rows.forEach((row: any) => {
+        filteredRemoteRows.forEach((row: any) => {
           const sid = getRowValue(row, "Session ID");
           if (!sid) return;
           if (!remoteSessionsMap.has(sid)) remoteSessionsMap.set(sid, []);
           remoteSessionsMap.get(sid)!.push(row);
         });
 
-        // 3. Check current Session IDs
-        const currentSidsRes = await getDb().execute(`SELECT DISTINCT "Session ID" as sid FROM Observations`);
-        const currentSids = new Set(
-          currentSidsRes.rows.map((r: any) => getRowValue(r, "Session ID") || getRowValue(r, "sid")).filter(Boolean)
+        // 4. Check Session IDs scoped by center to guarantee zero cross-center collisions
+        const currentFacilitySidsRes = await getDb().execute({
+          sql: `SELECT DISTINCT "Session ID" as sid FROM Observations WHERE LOWER(TRIM("Facility")) = LOWER(TRIM(?))`,
+          args: [targetFacility]
+        });
+        const currentFacilitySids = new Set(
+          currentFacilitySidsRes.rows.map((r: any) => getRowValue(r, "Session ID") || getRowValue(r, "sid")).filter(Boolean)
         );
+
+        const otherFacilitySidsRes = await getDb().execute({
+          sql: `SELECT DISTINCT "Session ID" as sid FROM Observations WHERE LOWER(TRIM("Facility")) != LOWER(TRIM(?))`,
+          args: [targetFacility]
+        });
+        const otherFacilitySids = new Set(
+          otherFacilitySidsRes.rows.map((r: any) => getRowValue(r, "Session ID") || getRowValue(r, "sid")).filter(Boolean)
+        );
+
+        const facHash = crypto.createHash('md5').update(targetFacility.toLowerCase()).digest('hex').slice(0, 8);
 
         let importedSessions = 0;
         let skippedSessions = 0;
@@ -1410,26 +1495,37 @@ export default async function handler(req: any, res: any) {
         let totalImportedRows = 0;
 
         if (importMode === 'overwrite_all') {
-          // Clear current observations
-          await getDb().execute("DELETE FROM Observations");
+          // Strictly delete ONLY the active center's rows (never touch other centers!)
+          await getDb().execute({
+            sql: `DELETE FROM Observations WHERE LOWER(TRIM("Facility")) = LOWER(TRIM(?))`,
+            args: [targetFacility]
+          });
+          currentFacilitySids.clear();
         }
 
         // Prepare batch statements
         const batchStatements: any[] = [];
         const executeBatchLimit = 150;
 
-        for (const [sid, rows] of remoteSessionsMap.entries()) {
-          const exists = currentSids.has(sid);
+        for (const [origSid, rows] of remoteSessionsMap.entries()) {
+          const scopedSid = `${origSid}::${facHash}`;
+          const existingSid = currentFacilitySids.has(scopedSid)
+            ? scopedSid
+            : currentFacilitySids.has(origSid)
+            ? origSid
+            : null;
 
-          if (exists) {
+          // If another center already owns origSid, isolate this center with scopedSid
+          const finalSid = existingSid || (otherFacilitySids.has(origSid) ? scopedSid : origSid);
+
+          if (existingSid) {
             if (importMode === 'merge_skip_existing') {
               skippedSessions++;
-              continue; // Skip this session
+              continue; // Skip this session in THIS center only
             } else if (importMode === 'merge_overwrite_existing') {
-              // Delete existing session in local DB first
               batchStatements.push({
-                sql: 'DELETE FROM Observations WHERE "Session ID" = ?',
-                args: [sid]
+                sql: 'DELETE FROM Observations WHERE "Session ID" = ? AND LOWER(TRIM("Facility")) = LOWER(TRIM(?))',
+                args: [existingSid, targetFacility]
               });
               updatedSessions++;
             }
@@ -1437,7 +1533,7 @@ export default async function handler(req: any, res: any) {
             importedSessions++;
           }
 
-          // Insert rows for this session
+          // Insert rows stamped strictly with targetFacility (no mixing with other centers!)
           for (const row of rows) {
             const oppIndBefPat = getRowValue(row, "Ind: Bef. Pat") || (getRowValue(row, "bef-pat") === 'Yes' ? 'Yes' : 'No');
             const oppIndBefAsept = getRowValue(row, "Ind: Bef. Asept") || (getRowValue(row, "bef-asept") === 'Yes' ? 'Yes' : 'No');
@@ -1455,9 +1551,9 @@ export default async function handler(req: any, res: any) {
                   "Action (HR/HW/Missed)", "Gloves Used", "Column No"
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               args: [
-                sid,
+                finalSid,
                 getRowValue(row, "Timestamp") || new Date().toISOString(),
-                getRowValue(row, "Facility"),
+                targetFacility,
                 getRowValue(row, "Service"),
                 getRowValue(row, "Ward"),
                 getRowValue(row, "Department"),
@@ -1497,13 +1593,14 @@ export default async function handler(req: any, res: any) {
           await getDb().batch(batchStatements);
         }
 
-        // 4. Optionally import settings / dropdown lists
+        // 5. Optionally import dropdown lists STRICTLY into targetFacility's isolated FacilitySettings (NEVER merge into global Settings or Facilities!)
         let mergedSettingsCount = 0;
         if (importSettings) {
           try {
             const remoteSettingsRes = await remoteDb.execute(`SELECT * FROM Settings LIMIT 500`);
             if (remoteSettingsRes.rows && remoteSettingsRes.rows.length > 0) {
-              const currentSettings = await getFullSettingsCached();
+              const globalSettings = await getFullSettingsCached();
+              const centerSettings = await getFacilitySettingsCached(targetFacility, globalSettings);
               const uniqueAdd = (list: string[], val: string) => {
                 const t = String(val || '').trim();
                 if (t && !list.some(x => x.toLowerCase() === t.toLowerCase())) {
@@ -1513,7 +1610,6 @@ export default async function handler(req: any, res: any) {
               };
 
               remoteSettingsRes.rows.forEach((r: any) => {
-                const fac = getRowValue(r, "Facilities");
                 const ser = getRowValue(r, "Services");
                 const wrd = getRowValue(r, "Wards");
                 const dep = getRowValue(r, "Departments");
@@ -1521,37 +1617,37 @@ export default async function handler(req: any, res: any) {
                 const cit = getRowValue(r, "Cities");
                 const prc = getRowValue(r, "Professional Categories");
 
-                if (fac) uniqueAdd(currentSettings.facilities, fac);
-                if (ser) uniqueAdd(currentSettings.services, ser);
-                if (wrd) uniqueAdd(currentSettings.wards, wrd);
-                if (dep) uniqueAdd(currentSettings.departments, dep);
-                if (obs) uniqueAdd(currentSettings.observers, obs);
-                if (cit) uniqueAdd(currentSettings.cities, cit);
-                if (prc) uniqueAdd(currentSettings.profCategories, prc);
+                if (ser) uniqueAdd(centerSettings.services, ser);
+                if (wrd) uniqueAdd(centerSettings.wards, wrd);
+                if (dep) uniqueAdd(centerSettings.departments, dep);
+                if (obs) uniqueAdd(centerSettings.observers, obs);
+                if (cit) uniqueAdd(centerSettings.cities, cit);
+                if (prc) uniqueAdd(centerSettings.profCategories, prc);
               });
 
               if (mergedSettingsCount > 0) {
-                await saveSettingsToDb(currentSettings, currentSettings);
+                await saveFacilitySettingsToDb(targetFacility, centerSettings, globalSettings);
               }
             }
           } catch (setErr) {
-            console.error("Warning: Could not merge settings from remote:", setErr);
+            console.error("Warning: Could not import settings for facility:", setErr);
           }
         }
 
-        // 5. Invalidate In-Memory Cache so observations are fresh on next load
+        // 6. Invalidate caches for targetFacility cleanly
         cachedObservations = null;
-        cachedFacilitySettings = {};
-        invalidateFacilityCaches();
+        delete cachedFacilitySettings[targetFacility.toLowerCase()];
+        invalidateFacilityCaches(targetFacility);
 
         return res.status(200).json({
           success: true,
+          targetFacility,
           importedSessions,
           updatedSessions,
           skippedSessions,
           totalImportedRows,
           mergedSettingsCount,
-          message: `تم استيراد ${importedSessions} جلسة بنجاح (${totalImportedRows} سطر ملاحظة)${updatedSessions > 0 ? ` وتحديث ${updatedSessions} جلسة` : ''}${skippedSessions > 0 ? ` وتخطي ${skippedSessions} جلسة سابقة` : ''}.`
+          message: `تم استيراد ${importedSessions} جلسة بنجاح (${totalImportedRows} سطر ملاحظة) لحساب المركز "${targetFacility}" فقط${updatedSessions > 0 ? ` وتحديث ${updatedSessions} جلسة` : ''}${skippedSessions > 0 ? ` وتخطي ${skippedSessions} جلسة مكررة` : ''}.`
         });
       }
 

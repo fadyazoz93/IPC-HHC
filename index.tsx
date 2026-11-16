@@ -3149,6 +3149,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
               <TursoImportModal
                   isOpen={showTursoImportModal}
                   onClose={() => setShowTursoImportModal(false)}
+                  currentCenter={currentCenter}
                   onImportSuccess={() => {
                       fetchRecords();
                       if (setSettings) {
@@ -3684,7 +3685,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                           <span className="text-[10px] bg-purple-200 text-purple-800 font-bold px-2 py-0.5 rounded-full">ترحيل البيانات</span>
                                       </h2>
                                       <p className="text-xs text-purple-700 mt-1 leading-relaxed">
-                                          يمكنك ربط قاعدة بيانات Turso القديمة لجلب كافة نماذج وسجلات المركز السابقة ودمج القوائم المنسدلة في هذه القاعدة مباشرة بدون فقدان أو تكرار.
+                                          يمكنك ربط قاعدة بيانات Turso القديمة لجلب نماذج وسجلات هذا المركز فقط وقوائمه الخاصة بشكل معزول تماماً دون دمج أو تأثير على أي مركز آخر.
                                       </p>
                                   </div>
                               </div>
@@ -3713,6 +3714,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                   <TursoImportModal
                       isOpen={showTursoImportModal}
                       onClose={() => setShowTursoImportModal(false)}
+                      currentCenter={currentCenter}
                       onImportSuccess={() => {
                           if (setSettings) {
                               (window as any).google.script.run
