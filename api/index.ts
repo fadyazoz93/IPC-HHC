@@ -31,6 +31,7 @@ let cachedObservations: CacheEntry<any[]> | null = null;
 let cachedFacilityObservations: Record<string, CacheEntry<any[]>> = {};
 let cachedFacilitiesSummary: CacheEntry<Array<{ name: string; sessionCount: number; rowCount: number }>> | null = null;
 let cachedSettings: CacheEntry<any> | null = null;
+let cachedFacilitySettings: Record<string, CacheEntry<any>> = {};
 let dbInitialized = false;
 
 function invalidateFacilityCaches(facilityKey?: string) {
@@ -133,25 +134,27 @@ function getRowValue(row: any, columnName: string): string {
   return matchedKey ? String(row[matchedKey] || '') : '';
 }
 
-// Re-index session numbers in an in-memory array of observation rows
+// Re-index session numbers in an in-memory array of observation rows (isolated per facility + month)
 function reindexInMemorySessions(records: any[]): void {
-  const monthMap: { [month: string]: Array<{ sessionId: string, date: string, startTime: string }> } = {};
+  const monthMap: { [groupKey: string]: Array<{ sessionId: string, date: string, startTime: string }> } = {};
   const seenSessions = new Set<string>();
 
   records.forEach(r => {
     const sid = getRowValue(r, "Session ID");
     const date = getRowValue(r, "Session Date");
     const startTime = getRowValue(r, "Start Time") || '99:99';
+    const facKey = (getRowValue(r, "Facility") || '').trim().toLowerCase();
     if (!sid || !date || seenSessions.has(sid)) return;
     seenSessions.add(sid);
     const monthKey = date.slice(0, 7);
-    if (!monthMap[monthKey]) monthMap[monthKey] = [];
-    monthMap[monthKey].push({ sessionId: sid, date, startTime });
+    const groupKey = `${facKey}__${monthKey}`;
+    if (!monthMap[groupKey]) monthMap[groupKey] = [];
+    monthMap[groupKey].push({ sessionId: sid, date, startTime });
   });
 
   const sessionNoMap = new Map<string, string>();
-  Object.keys(monthMap).forEach(monthKey => {
-    const list = monthMap[monthKey];
+  Object.keys(monthMap).forEach(groupKey => {
+    const list = monthMap[groupKey];
     list.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       if (a.startTime !== b.startTime) return a.startTime.localeCompare(b.startTime);
@@ -249,6 +252,16 @@ async function initializeDatabaseOnce() {
       await getDb().execute(`ALTER TABLE Settings ADD COLUMN "User Password" TEXT`);
     } catch (e) { /* already exists */ }
 
+    await getDb().execute(`
+      CREATE TABLE IF NOT EXISTS FacilitySettings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          facility_key TEXT NOT NULL UNIQUE,
+          facility_name TEXT NOT NULL,
+          settings_json TEXT NOT NULL,
+          updated_at TEXT
+      );
+    `);
+
     // 2. Mandatory Indexing Architecture (Prevent Full Table Scans)
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_session_id ON Observations("Session ID");`);
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_session_date ON Observations("Session Date");`);
@@ -262,6 +275,7 @@ async function initializeDatabaseOnce() {
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_facility_session ON Observations("Facility", "Session ID");`);
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_facility_id ON Observations("Facility", id DESC);`);
     await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_settings_id ON Settings(id);`);
+    await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_fac_settings_key ON FacilitySettings(facility_key);`);
     try {
       await getDb().execute(`CREATE INDEX IF NOT EXISTS idx_obs_facility_lower_trim ON Observations(LOWER(TRIM("Facility")));`);
     } catch (e) { /* ignore if SQLite version lacks expression index support */ }
@@ -495,6 +509,141 @@ async function saveSettingsToDb(settings: any, existingSettings: any) {
   return cachedSettings.data;
 }
 
+// Per-center settings isolation helpers
+function buildCleanFacilitySettings(facilityName: string, globalSettings: any) {
+  return {
+    header1: facilityName.trim() || globalSettings?.header1 || "مستشفى المنيا الجامعى للعيون",
+    header2: "وحدة مكافحة العدوي",
+    header3: "أحصائية غسيل الأيدي",
+    logoRight: "",
+    logoLeft: "",
+    adminPassword: globalSettings?.adminPassword || DEFAULT_PASSWORDS.adminPassword,
+    managerPassword: globalSettings?.managerPassword || DEFAULT_PASSWORDS.managerPassword,
+    userPassword: globalSettings?.userPassword || DEFAULT_PASSWORDS.userPassword,
+    facilities: [...(globalSettings?.facilities || [])],
+    services: [],
+    wards: [],
+    departments: [],
+    observers: [],
+    cities: [],
+    profCategories: []
+  };
+}
+
+async function getFacilitySettingsCached(facilityName: string, globalSettings: any): Promise<any> {
+  const cleanName = String(facilityName || '').trim();
+  if (!cleanName) return globalSettings;
+
+  const facKey = cleanName.toLowerCase();
+  const now = Date.now();
+  if (cachedFacilitySettings[facKey] && now < cachedFacilitySettings[facKey].expiresAt) {
+    return {
+      ...cachedFacilitySettings[facKey].data,
+      facilities: [...(globalSettings?.facilities || [])]
+    };
+  }
+
+  const res = await getDb().execute({
+    sql: `SELECT settings_json FROM FacilitySettings WHERE facility_key = ? LIMIT 1`,
+    args: [facKey]
+  });
+
+  if (res.rows && res.rows.length > 0) {
+    try {
+      const rawJson = getRowValue(res.rows[0], "settings_json");
+      const parsed = JSON.parse(rawJson || '{}');
+      const merged = {
+        ...buildCleanFacilitySettings(cleanName, globalSettings),
+        ...parsed,
+        facilities: [...(globalSettings?.facilities || [])]
+      };
+      cachedFacilitySettings[facKey] = {
+        data: merged,
+        cachedAt: now,
+        expiresAt: now + SETTINGS_TTL_MS
+      };
+      return merged;
+    } catch (e) {
+      console.error("Error parsing FacilitySettings JSON:", e);
+    }
+  }
+
+  // Legacy fallback ONLY if FacilitySettings is still unused and this looks like the initial single center
+  const countRes = await getDb().execute(`SELECT COUNT(*) as cnt FROM FacilitySettings`);
+  const existingFacSettingsCount = Number(getRowValue(countRes.rows[0], "cnt") || 0);
+  const globalFacs: string[] = globalSettings?.facilities || [];
+  const legacyHeaderMatch = (globalSettings?.header1 || '').trim().toLowerCase() === facKey;
+  const isInitialSingleFacility = existingFacSettingsCount === 0 && (globalFacs.length <= 1 || legacyHeaderMatch);
+
+  const resolved = isInitialSingleFacility
+    ? {
+        ...globalSettings,
+        facilities: [...globalFacs]
+      }
+    : buildCleanFacilitySettings(cleanName, globalSettings);
+
+  cachedFacilitySettings[facKey] = {
+    data: resolved,
+    cachedAt: now,
+    expiresAt: now + SETTINGS_TTL_MS
+  };
+  return resolved;
+}
+
+async function saveFacilitySettingsToDb(facilityName: string, incoming: any, globalSettings: any) {
+  const cleanName = String(facilityName || '').trim();
+  const facKey = cleanName.toLowerCase();
+
+  // Keep global facilities list authoritative; only add cleanName if missing
+  const globalFacs: string[] = [...(globalSettings?.facilities || [])];
+  if (cleanName && !globalFacs.some(f => f.trim().toLowerCase() === facKey)) {
+    globalFacs.push(cleanName);
+    await saveSettingsToDb({ ...globalSettings, facilities: globalFacs }, globalSettings);
+  }
+
+  const perCenterPayload = {
+    header1: typeof incoming.header1 === 'string' ? incoming.header1 : cleanName,
+    header2: typeof incoming.header2 === 'string' ? incoming.header2 : "وحدة مكافحة العدوي",
+    header3: typeof incoming.header3 === 'string' ? incoming.header3 : "أحصائية غسيل الأيدي",
+    logoRight: typeof incoming.logoRight === 'string' ? incoming.logoRight : "",
+    logoLeft: typeof incoming.logoLeft === 'string' ? incoming.logoLeft : "",
+    services: Array.isArray(incoming.services) ? incoming.services.map(String) : [],
+    wards: Array.isArray(incoming.wards) ? incoming.wards.map(String) : [],
+    departments: Array.isArray(incoming.departments) ? incoming.departments.map(String) : [],
+    observers: Array.isArray(incoming.observers) ? incoming.observers.map(String) : [],
+    cities: Array.isArray(incoming.cities) ? incoming.cities.map(String) : [],
+    profCategories: Array.isArray(incoming.profCategories) ? incoming.profCategories.map(String) : []
+  };
+
+  const nowIso = new Date().toISOString();
+  await getDb().execute({
+    sql: `INSERT INTO FacilitySettings (facility_key, facility_name, settings_json, updated_at)
+          VALUES (?, ?, ?, ?)
+          ON CONFLICT(facility_key) DO UPDATE SET
+            facility_name = excluded.facility_name,
+            settings_json = excluded.settings_json,
+            updated_at = excluded.updated_at`,
+    args: [facKey, cleanName, JSON.stringify(perCenterPayload), nowIso]
+  });
+
+  const fullCenterSettings = {
+    ...perCenterPayload,
+    adminPassword: globalSettings?.adminPassword || DEFAULT_PASSWORDS.adminPassword,
+    managerPassword: globalSettings?.managerPassword || DEFAULT_PASSWORDS.managerPassword,
+    userPassword: globalSettings?.userPassword || DEFAULT_PASSWORDS.userPassword,
+    facilities: globalFacs
+  };
+
+  const now = Date.now();
+  cachedFacilitySettings[facKey] = {
+    data: fullCenterSettings,
+    cachedAt: now,
+    expiresAt: now + SETTINGS_TTL_MS
+  };
+
+  return fullCenterSettings;
+}
+
 export default async function handler(req: any, res: any) {
   // CORS Configuration
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -558,6 +707,11 @@ export default async function handler(req: any, res: any) {
       }
 
       if (action === 'getSettings') {
+        const facilityParam = req.query.facility ? String(req.query.facility).trim() : '';
+        if (facilityParam) {
+          const facilitySettings = await getFacilitySettingsCached(facilityParam, fullSettings);
+          return res.status(200).json(sanitizeSettingsForRole(facilitySettings, 'admin'));
+        }
         return res.status(200).json(sanitizeSettingsForRole(fullSettings, 'admin'));
       }
 
@@ -675,12 +829,20 @@ export default async function handler(req: any, res: any) {
             countsRes.rows.forEach((r: any) => {
               const f = (getRowValue(r, "Facility") || getRowValue(r, "fac")).trim();
               if (f) {
-                summaryMap[f.toLowerCase()] = {
-                  rawName: f,
-                  sessionIds: new Set(),
-                  sessionCount: Number(getRowValue(r, "sessionCount") || 0),
-                  rowCount: Number(getRowValue(r, "rowCount") || 0)
-                };
+                const key = f.toLowerCase();
+                const sCount = Number(getRowValue(r, "sessionCount") || 0);
+                const rCount = Number(getRowValue(r, "rowCount") || 0);
+                if (!summaryMap[key]) {
+                  summaryMap[key] = {
+                    rawName: f,
+                    sessionIds: new Set(),
+                    sessionCount: sCount,
+                    rowCount: rCount
+                  };
+                } else {
+                  summaryMap[key].sessionCount += sCount;
+                  summaryMap[key].rowCount += rCount;
+                }
               }
             });
           } catch (e) {
@@ -878,12 +1040,15 @@ export default async function handler(req: any, res: any) {
         const sanitizedPayload = { ...settingsData };
         delete sanitizedPayload.rolePasswords;
 
-        const updatedFullSettings = await saveSettingsToDb(sanitizedPayload, fullSettings);
+        const targetFacility = String(sanitizedPayload.facility || sanitizedPayload.currentCenter || '').trim();
+        const updatedSettings = targetFacility
+          ? await saveFacilitySettingsToDb(targetFacility, sanitizedPayload, fullSettings)
+          : await saveSettingsToDb(sanitizedPayload, fullSettings);
 
         return res.status(200).json({
           success: true,
           token: 'open-access-token',
-          settings: sanitizeSettingsForRole(updatedFullSettings, 'admin')
+          settings: sanitizeSettingsForRole(updatedSettings, 'admin')
         });
       }
 
@@ -909,13 +1074,29 @@ export default async function handler(req: any, res: any) {
       }
 
       if (action === 'deleteMonth') {
-        const targetMonths = Array.isArray(bodyData) ? bodyData : [String(bodyData)];
+        const parsedBody = typeof bodyData === 'string' ? (() => { try { return JSON.parse(bodyData); } catch { return bodyData; } })() : bodyData;
+        const targetMonths: string[] = Array.isArray(parsedBody)
+          ? parsedBody
+          : Array.isArray(parsedBody?.months)
+          ? parsedBody.months
+          : [String(parsedBody?.months || parsedBody || '')];
+        const targetFacility = parsedBody && !Array.isArray(parsedBody) && typeof parsedBody === 'object'
+          ? String(parsedBody.facility || '').trim()
+          : '';
+        const targetFacilityLower = targetFacility.toLowerCase();
+
         let totalCount = 0;
         for (const mKey of targetMonths) {
-          const deleteRes = await getDb().execute({
-            sql: 'DELETE FROM Observations WHERE "Session Date" LIKE ?',
-            args: [`${mKey}%`]
-          });
+          if (!mKey) continue;
+          const deleteRes = targetFacility
+            ? await getDb().execute({
+                sql: 'DELETE FROM Observations WHERE LOWER(TRIM("Facility")) = LOWER(TRIM(?)) AND "Session Date" LIKE ?',
+                args: [targetFacility, `${mKey}%`]
+              })
+            : await getDb().execute({
+                sql: 'DELETE FROM Observations WHERE "Session Date" LIKE ?',
+                args: [`${mKey}%`]
+              });
           totalCount += (deleteRes.rowsAffected || 0);
         }
 
@@ -923,15 +1104,19 @@ export default async function handler(req: any, res: any) {
         if (cachedObservations) {
           cachedObservations.data = cachedObservations.data.filter(r => {
             const date = getRowValue(r, "Session Date");
-            return !targetMonths.some(m => date.startsWith(m));
+            const matchesMonth = targetMonths.some(m => date.startsWith(m));
+            if (!matchesMonth) return true;
+            if (!targetFacility) return false;
+            const rowFac = (getRowValue(r, "Facility") || '').trim().toLowerCase();
+            return rowFac !== targetFacilityLower;
           });
           reindexInMemorySessions(cachedObservations.data);
           cachedObservations.cachedAt = Date.now();
           cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
         }
-        invalidateFacilityCaches();
+        invalidateFacilityCaches(targetFacility || undefined);
 
-        return res.status(200).json({ success: true, count: totalCount, months: targetMonths });
+        return res.status(200).json({ success: true, count: totalCount, months: targetMonths, facility: targetFacility || null });
       }
 
       if (action === 'updateSessionDate') {
@@ -1356,6 +1541,7 @@ export default async function handler(req: any, res: any) {
 
         // 5. Invalidate In-Memory Cache so observations are fresh on next load
         cachedObservations = null;
+        cachedFacilitySettings = {};
         invalidateFacilityCaches();
 
         return res.status(200).json({
@@ -1376,14 +1562,30 @@ export default async function handler(req: any, res: any) {
         }
 
         const currentSettings = await getFullSettingsCached();
-        const existing: string[] = currentSettings.facilities || [];
+        const existing: string[] = [...(currentSettings.facilities || [])];
         const alreadyExists = existing.some((f: string) => f.trim().toLowerCase() === facility.toLowerCase());
 
         if (!alreadyExists) {
+          // Before expanding beyond 1 facility, preserve legacy Settings for the existing first facility if not yet migrated
+          if (existing.length === 1) {
+            const firstFac = String(existing[0] || '').trim();
+            if (firstFac) {
+              const firstKey = firstFac.toLowerCase();
+              const existingRow = await getDb().execute({
+                sql: `SELECT id FROM FacilitySettings WHERE facility_key = ? LIMIT 1`,
+                args: [firstKey]
+              });
+              if (!existingRow.rows || existingRow.rows.length === 0) {
+                await saveFacilitySettingsToDb(firstFac, currentSettings, currentSettings);
+              }
+            }
+          }
+
           existing.push(facility);
           currentSettings.facilities = existing;
           const updated = await saveSettingsToDb(currentSettings, currentSettings);
           cachedFacilitiesSummary = null;
+          delete cachedFacilitySettings[facility.toLowerCase()];
           return res.status(200).json({
             success: true,
             facility,
@@ -1414,15 +1616,21 @@ export default async function handler(req: any, res: any) {
         });
         const deletedCount = Number(deleteRes.rowsAffected || 0);
 
-        // 2. Remove facility from Settings
+        // 2. Delete per-facility settings & remove facility from global Settings
+        const targetLower = facility.toLowerCase();
+        await getDb().execute({
+          sql: 'DELETE FROM FacilitySettings WHERE facility_key = ?',
+          args: [targetLower]
+        });
+        delete cachedFacilitySettings[targetLower];
+
         const currentSettings = await getFullSettingsCached();
         currentSettings.facilities = (currentSettings.facilities || []).filter(
-          (f: string) => f.trim().toLowerCase() !== facility.toLowerCase()
+          (f: string) => f.trim().toLowerCase() !== targetLower
         );
         const updatedSettings = await saveSettingsToDb(currentSettings, currentSettings);
 
         // 3. Optimistically mutate caches in-memory instead of forcing a full DB re-read
-        const targetLower = facility.toLowerCase();
         if (cachedObservations) {
           cachedObservations.data = cachedObservations.data.filter(
             r => (getRowValue(r, "Facility") || '').trim().toLowerCase() !== targetLower

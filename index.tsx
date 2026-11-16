@@ -109,7 +109,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
             deleteMonth: (d) => execute('deleteMonth', d),
             updateSessionDate: (d) => execute('updateSessionDate', d),
             updateSessionDepartment: (d) => execute('updateSessionDepartment', d),
-            getSettings: () => execute('getSettings'),
+            getSettings: (d) => execute('getSettings', d),
             saveSettings: (d) => execute('saveSettings', d),
             testTursoConnection: (d) => execute('testTursoConnection', d),
             importTursoData: (d) => execute('importTursoData', d),
@@ -683,12 +683,14 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
               return {...s, rawRows: [], professionals: profs};
           });
 
-          // Group by month and sort chronologically to ensure automatic sequential session numbers
+          // Group by facility + month and sort chronologically to ensure automatic sequential session numbers per center
           const monthGroups = {};
           sessionsList.forEach(s => {
+              const fKey = (s.sessionInfo.facility || '').trim().toLowerCase();
               const mKey = (s.sessionInfo.date || '').slice(0, 7) || 'unknown';
-              if (!monthGroups[mKey]) monthGroups[mKey] = [];
-              monthGroups[mKey].push(s);
+              const gKey = `${fKey}__${mKey}`;
+              if (!monthGroups[gKey]) monthGroups[gKey] = [];
+              monthGroups[gKey].push(s);
           });
 
           Object.values(monthGroups).forEach(list => {
@@ -717,6 +719,8 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
         const [sessionsLoaded, setSessionsLoaded] = useState(false);
 
         const fetchAllSessions = () => {
+            setSessionsLoaded(false);
+            setAllSessions([]);
             window.google.script.run.withSuccessHandler(rows => {
                 if (rows && !rows.error && Array.isArray(rows)) {
                     const scopedRows = currentCenter
@@ -757,7 +761,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 
         useEffect(() => {
           if (initialData) {
-             setSession(initialData.sessionInfo);
+             setSession({
+                 ...initialData.sessionInfo,
+                 facility: currentCenter || initialData.sessionInfo.facility || ''
+             });
           } else if (currentCenter) {
              setSession(prev => ({ ...prev, facility: currentCenter }));
           }
@@ -786,7 +793,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
              setFormSaved(false);
              setMessage(null);
           }
-        }, [initialData]);
+        }, [initialData, currentCenter]);
 
         useEffect(() => {
             if(session.startTime && session.endTime && !formSaved) {
@@ -914,9 +921,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
         };
 
         const handleSubmit = () => {
-          if (!session.facility || !session.observer) { setMessage({ type: 'error', text: 'Facility & Observer required' }); return; }
+          const effectiveFacility = (currentCenter || session.facility || '').trim();
+          if (!effectiveFacility || !session.observer) { setMessage({ type: 'error', text: 'Facility & Observer required' }); return; }
           setIsSubmitting(true);
-          let finalSession = { ...session };
+          let finalSession = { ...session, facility: effectiveFacility };
           
           const cleanedPros = professionals.map((p, index) => ({ ...p, _originalIndex: index, opportunities: p.opportunities.filter(o => o.indications && o.indications.length > 0 || o.action) })).filter(p => p.categoryCode || p.opportunities.length > 0);
           window.google.script.run.withSuccessHandler((res) => {
@@ -951,7 +959,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-x-8 gap-y-0 mb-6 print:mb-2 text-sm print:gap-y-1 print:gap-x-6">
                    <div>
-                      <FormInputRow label="Facility:" value={session.facility} onChange={e=>setSession({...session, facility: e.target.value})} readOnly={isReadOnly} options={settings?.facilities} />
+                      <FormInputRow label="Facility:" value={currentCenter || session.facility} onChange={e=>setSession({...session, facility: e.target.value})} readOnly={isReadOnly || Boolean(currentCenter)} options={currentCenter ? null : settings?.facilities} />
                       <FormInputRow label="Service:" value={session.service} onChange={e=>setSession({...session, service: e.target.value})} readOnly={isReadOnly} options={settings?.services} />
                       <FormInputRow label="Ward:" value={session.ward} onChange={e=>setSession({...session, ward: e.target.value})} readOnly={isReadOnly} options={settings?.wards} />
                       <FormInputRow label="Department:" value={session.department} onChange={e=>setSession({...session, department: e.target.value})} readOnly={isReadOnly} options={settings?.departments} />
@@ -1528,6 +1536,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
             const leftVal = logoPayload && logoPayload.logoLeft !== undefined ? logoPayload.logoLeft : logoModalLeft;
             const updated = {
                 ...(settings || {}),
+                facility: currentCenter || undefined,
                 logoRight: String(rightVal || '').trim(),
                 logoLeft: String(leftVal || '').trim()
             };
@@ -1707,6 +1716,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                     const newSessionId = uuidv4();
                     const copiedSession = {
                         ...originalSession.sessionInfo,
+                        facility: currentCenter || originalSession.sessionInfo.facility,
                         sessionId: newSessionId,
                         periodNumber: String(targetMonth),
                         date: newDateStr
@@ -1818,6 +1828,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 
             const copiedSession = {
                 ...originalSession.sessionInfo,
+                facility: currentCenter || originalSession.sessionInfo.facility,
                 sessionId: newSessionId,
                 periodNumber: String(targetMonth || (new Date(copySessionDate).getMonth() + 1)),
                 date: copySessionDate,
@@ -2054,7 +2065,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                     setDeletingMonthLoading(false);
                     alert("حدث خطأ أثناء حذف البيانات: " + String(err));
                 })
-                .deleteMonth(deleteMonthsConfirm);
+                .deleteMonth({ months: deleteMonthsConfirm, facility: currentCenter || undefined });
         };
 
         const openMonth = (monthKey) => {
@@ -3143,7 +3154,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       if (setSettings) {
                           (window as any).google.script.run
                               .withSuccessHandler((s: any) => { if (s) setSettings(s); })
-                              .getSettings();
+                              .getSettings(currentCenter ? { facility: currentCenter } : undefined);
                       }
                   }}
               />
@@ -3308,9 +3319,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       setNewCenterInput('');
                       if (res && res.success) {
                           setMessage({ type: 'success', text: res.message || `تمت إضافة المركز "${name}" بنجاح` });
-                          if (res.settings) {
-                              setLocalSettings(res.settings);
-                              if (setSettings) setSettings(res.settings);
+                          if (res.settings?.facilities) {
+                              const nextFacs = res.settings.facilities;
+                              setLocalSettings(prev => ({ ...prev, facilities: nextFacs }));
+                              if (setSettings) setSettings(prev => ({ ...(prev || {}), facilities: nextFacs }));
                           }
                       } else {
                           setMessage({ type: 'error', text: res?.error || 'حدث خطأ أثناء إضافة المركز' });
@@ -3333,9 +3345,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       setCenterToDeleteInSettings(null);
                       if (res && res.success) {
                           setMessage({ type: 'success', text: res.message || `تم حذف المركز "${name}" وكافة بياناته بنجاح` });
-                          if (res.settings) {
-                              setLocalSettings(res.settings);
-                              if (setSettings) setSettings(res.settings);
+                          if (res.settings?.facilities) {
+                              const nextFacs = res.settings.facilities;
+                              setLocalSettings(prev => ({ ...prev, facilities: nextFacs }));
+                              if (setSettings) setSettings(prev => ({ ...(prev || {}), facilities: nextFacs }));
                           }
                           if (currentCenter && currentCenter.trim().toLowerCase() === name.trim().toLowerCase()) {
                               if (onSwitchCenter) onSwitchCenter();
@@ -3378,7 +3391,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                   }
                   setMessage({
                       type: 'success',
-                      text: 'تم حفظ الإعدادات بنجاح!'
+                      text: `تم حفظ إعدادات المركز "${currentCenter || ''}" بنجاح!`
                   });
                   setSettings(res && res.settings ? res.settings : localSettings);
                   setTimeout(() => setMessage(null), 4000);
@@ -3389,7 +3402,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       setMessage({ type: 'error', text: 'تعذر حفظ الإعدادات: ' + (error?.message || String(error)) });
                   });
               }
-              runner.saveSettings(localSettings);
+              runner.saveSettings({ ...localSettings, facility: currentCenter || undefined });
           };
 
           return (
@@ -3640,9 +3653,15 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       </section>
 
                       <section>
-                          <h2 className="text-lg font-semibold text-gray-700 mb-3">Dropdown Lists</h2>
+                          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                              <h2 className="text-lg font-semibold text-gray-700">Dropdown Lists</h2>
+                              {currentCenter && (
+                                  <span className="text-xs bg-orange-50 text-orange-800 border border-orange-200 px-2.5 py-1 rounded-lg font-['Cairo'] font-bold">
+                                      قوائم خاصة بـ: {currentCenter}
+                                  </span>
+                              )}
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <ListEditor label="Facilities" items={localSettings.facilities} onChange={v => handleArrayChange('facilities', v)} placeholder="Add Facility" readOnly={isReadOnly} />
                               <ListEditor label="Services" items={localSettings.services} onChange={v => handleArrayChange('services', v)} placeholder="Add Service" readOnly={isReadOnly} />
                               <ListEditor label="Wards" items={localSettings.wards} onChange={v => handleArrayChange('wards', v)} placeholder="Add Ward" readOnly={isReadOnly} />
                               <ListEditor label="Departments" items={localSettings.departments} onChange={v => handleArrayChange('departments', v)} placeholder="Add Department" readOnly={isReadOnly} />
@@ -3698,7 +3717,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                           if (setSettings) {
                               (window as any).google.script.run
                                   .withSuccessHandler((s: any) => { if (s) setSettings(s); })
-                                  .getSettings();
+                                  .getSettings(currentCenter ? { facility: currentCenter } : undefined);
                           }
                       }}
                   />
@@ -3782,17 +3801,33 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                      console.error("Failed to load settings", err);
                  });
              }
-             runner.getSettings();
-         }, []);
+             runner.getSettings(currentCenter ? { facility: currentCenter } : undefined);
+         }, [currentCenter]);
 
          const handleSelectCenter = (centerName: string) => {
              const clean = centerName.trim();
              try { localStorage.setItem(ACTIVE_CENTER_KEY, clean); } catch {}
+             setEditData(null);
+             setSettings(prev => ({
+                 header1: clean,
+                 header2: "وحدة مكافحة العدوي",
+                 header3: "أحصائية غسيل الأيدي",
+                 logoRight: "",
+                 logoLeft: "",
+                 facilities: prev?.facilities || [],
+                 services: [],
+                 wards: [],
+                 departments: [],
+                 observers: [],
+                 cities: [],
+                 profCategories: []
+             }));
              setCurrentCenter(clean);
          };
 
          const handleSwitchCenter = () => {
              try { localStorage.removeItem(ACTIVE_CENTER_KEY); } catch {}
+             setEditData(null);
              setCurrentCenter(null);
          };
 
@@ -3863,7 +3898,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                </nav>
 
                <div className="p-2 md:p-6 w-full mx-auto flex-1">
-                  <ErrorBoundary>
+                  <ErrorBoundary key={currentCenter || 'no-center'}>
                      {view === 'form' && (
                          <ObservationForm
                              initialData={editData}
