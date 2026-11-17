@@ -1,1 +1,200 @@
-/* Global stylesheet */
+/* Futuristic Light Clinical Theme & Animated Hand Hygiene Icons */
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Futuristic Luminous Clinical Canvas Background (Screen Only) */
+.clinical-futuristic-bg {
+  background-color: #f4f8fc;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(14, 165, 233, 0.09) 0%, transparent 38%),
+    radial-gradient(circle at 88% 12%, rgba(242, 101, 34, 0.06) 0%, transparent 34%),
+    radial-gradient(circle at 75% 88%, rgba(20, 184, 166, 0.07) 0%, transparent 40%),
+    linear-gradient(to right, rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+}
+
+/* Translucent Glass Surfaces */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.glass-panel-hover {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 220ms ease;
+}
+
+.glass-panel-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(14, 165, 233, 0.38);
+  box-shadow: 0 16px 36px -14px rgba(2, 132, 199, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Smooth Animated Clinical & Hand Hygiene SVG Keyframes (GPU-composited transform/opacity/stroke) */
+@keyframes hygieneFloat {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-2px) scale(1.03); }
+}
+
+@keyframes dropletPulse {
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.95; }
+  50% { transform: translateY(-1.8px) scale(1.06); opacity: 1; }
+}
+
+@keyframes hygieneRipple {
+  0% { transform: scale(0.86); opacity: 0.55; }
+  70% { transform: scale(1.18); opacity: 0; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+@keyframes ecgDraw {
+  0% { stroke-dashoffset: 36; opacity: 0.75; }
+  45% { stroke-dashoffset: 0; opacity: 1; }
+  85% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -36; opacity: 0.75; }
+}
+
+@keyframes orbitSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cogOscillate {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(32deg); }
+}
+
+@keyframes sparkleFade {
+  0%, 100% { opacity: 0.45; transform: scale(0.88); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+
+@keyframes vaultScan {
+  0%, 100% { transform: translateY(0px); opacity: 0.75; }
+  50% { transform: translateY(2px); opacity: 1; }
+}
+
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeSlideUp 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Icon Animation Classes */
+.icon-anim-droplet {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dropletPulse 3s ease-in-out infinite;
+}
+
+.icon-anim-float {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hygieneFloat 3.4s ease-in-out infinite;
+}
+
+.icon-anim-ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hygieneRipple 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.icon-anim-ecg {
+  stroke-dasharray: 36;
+  animation: ecgDraw 2.8s ease-in-out infinite;
+}
+
+.icon-anim-orbit {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: orbitSpin 12s linear infinite;
+}
+
+.icon-anim-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sparkleFade 2.4s ease-in-out infinite;
+}
+
+.icon-anim-vault {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: vaultScan 2.8s ease-in-out infinite;
+}
+
+.icon-anim-cog {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cogOscillate 6s ease-in-out infinite;
+}
+
+/* Interactive Hover Boost on Buttons & Nav Links */
+button:hover .icon-hover-spin,
+.group:hover .icon-hover-spin {
+  transform: rotate(90deg);
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button:hover .icon-hover-shift,
+.group:hover .icon-hover-shift {
+  transform: translateX(-2px);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.icon-hover-spin,
+.icon-hover-shift {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .icon-anim-droplet,
+  .icon-anim-float,
+  .icon-anim-ripple,
+  .icon-anim-ecg,
+  .icon-anim-orbit,
+  .icon-anim-sparkle,
+  .icon-anim-vault,
+  .icon-anim-cog,
+  .animate-fade-in {
+    animation: none !important;
+  }
+}
+
+/* Print Media Safety: Strip futuristic gradients, blur, and animations cleanly */
+@media print {
+  .clinical-futuristic-bg {
+    background: white !important;
+    background-image: none !important;
+  }
+  .glass-panel {
+    background: white !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+  .icon-anim-droplet,
+  .icon-anim-float,
+  .icon-anim-ripple,
+  .icon-anim-ecg,
+  .icon-anim-orbit,
+  .icon-anim-sparkle,
+  .icon-anim-vault,
+  .icon-anim-cog {
+    animation: none !important;
+  }
+}

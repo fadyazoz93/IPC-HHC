@@ -10,7 +10,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="alternate icon" href="/favicon.svg">
     <link rel="apple-touch-icon" href="/favicon.svg">
-    <meta name="theme-color" content="#F26522">
+    <meta name="theme-color" content="#0284C7">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,26 +18,33 @@
 
     
     <style>
-      /* Fonts: Inter for English, Cairo for Arabic */
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800&display=swap');
+      /* Fonts: Plus Jakarta Sans & JetBrains Mono for English/telemetry, Cairo for Arabic */
+      @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
       
-      body { background-color: #f8fafc; font-family: 'Cairo', 'Inter', sans-serif; color: #334155; -webkit-tap-highlight-color: transparent; }
+      body {
+        background-color: #f4f8fc;
+        font-family: 'Cairo', 'Plus Jakarta Sans', sans-serif;
+        color: #1e293b;
+        -webkit-tap-highlight-color: transparent;
+      }
       
       /* WHO Form Specific Styles */
-      .who-header-bg { background-color: #F26522; }
+      .who-header-bg { background: linear-gradient(135deg, #F26522 0%, #EA580C 60%, #D94E0F 100%); }
       
       /* Checkbox & Radio - Touch Friendly */
-      .form-checkbox { appearance: none; width: 22px; height: 22px; border: 2px solid #334155; background: white; display: inline-flex; align-items: center; justify-content: center; margin-right: 8px; cursor: pointer; transition: all 0.2s; border-radius: 4px; }
-      .form-checkbox.checked { background-color: #F26522; border-color: #F26522; }
+      .form-checkbox { appearance: none; width: 22px; height: 22px; border: 2px solid #334155; background: white; display: inline-flex; align-items: center; justify-content: center; margin-right: 8px; cursor: pointer; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); border-radius: 5px; }
+      .form-checkbox:hover { border-color: #F26522; transform: scale(1.04); }
+      .form-checkbox.checked { background-color: #F26522; border-color: #F26522; box-shadow: 0 2px 8px rgba(242, 101, 34, 0.25); }
       .form-checkbox.checked:after { content: '✔'; font-size: 14px; color: white; font-weight: bold; }
       
-      .form-radio { appearance: none; width: 22px; height: 22px; border: 2px solid #334155; border-radius: 50%; background: white; display: inline-flex; align-items: center; justify-content: center; margin-right: 8px; cursor: pointer; transition: all 0.2s; }
+      .form-radio { appearance: none; width: 22px; height: 22px; border: 2px solid #334155; border-radius: 50%; background: white; display: inline-flex; align-items: center; justify-content: center; margin-right: 8px; cursor: pointer; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+      .form-radio:hover { border-color: #F26522; transform: scale(1.04); }
       .form-radio.checked { border-color: #F26522; }
       .form-radio.checked:after { content: ''; width: 12px; height: 12px; background: #F26522; border-radius: 50%; }
       
       /* Input Styles - Text base for mobile to prevent zoom */
-      .form-input-bg { background-color: #fff; border: 1px solid #cbd5e1; padding: 6px 8px; width: 100%; font-weight: 600; font-family: 'Cairo', 'Inter', sans-serif; transition: all 0.2s; border-radius: 6px; font-size: 16px; text-align: center; /* Prevents iOS zoom and centers text */ }
-      .form-input-bg:focus { outline: none; border-color: #F26522; box-shadow: 0 0 0 3px rgba(242, 101, 34, 0.1); }
+      .form-input-bg { background-color: rgba(255, 255, 255, 0.92); border: 1px solid #cbd5e1; padding: 6px 8px; width: 100%; font-weight: 600; font-family: 'Cairo', 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; border-radius: 8px; font-size: 16px; text-align: center; /* Prevents iOS zoom and centers text */ }
+      .form-input-bg:focus { outline: none; border-color: #0284C7; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.14); background-color: #ffffff; }
       
       /* Print overrides */
       @media print {
@@ -163,7 +170,7 @@
 
         /* Header Styling in Print */
         .who-header-bg { 
-            background-color: #F26522 !important; 
+            background: #F26522 !important; 
             color: white !important; 
             padding: 3mm 0 !important;
             border-bottom: 2px solid #c1501b !important;

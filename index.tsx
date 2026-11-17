@@ -22,6 +22,13 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 (window as any).React = React;
 (window as any).ReactDOM = ReactDOM;
 
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+declare const google: any;
+
       // =========================================================================
       // AUTH TOKEN STORAGE HELPERS
       // =========================================================================
@@ -139,25 +146,144 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
       const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { var r=Math.random()*16|0,v=c=='x'?r:(r&0x3|0x8);return v.toString(16); });
 
       const Icons = {
-        Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-        Edit: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
-        Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
-        Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-        X: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-        Print: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>,
-        Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
-        Excel: () => <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><line x1="12" y1="11" x2="12" y2="19"></line></svg>,
-        Eye: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-        Spinner: () => <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-orange-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>,
-        Form: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
-        Chart: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
-        Database: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>,
-        Clipboard: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>,
-        Users: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
-        Activity: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
-        Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
-        Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
-        Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
+        Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+        Edit: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+        Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+        Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+        X: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+        Print: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8" rx="1"/>
+          </svg>
+        ),
+        Download: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <g className="icon-anim-float">
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </g>
+          </svg>
+        ),
+        Excel: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="8" y1="13" x2="16" y2="13"/>
+            <line x1="8" y1="17" x2="16" y2="17"/>
+            <line x1="12" y1="11" x2="12" y2="19"/>
+          </svg>
+        ),
+        Eye: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3" className="icon-anim-sparkle"/>
+          </svg>
+        ),
+        Spinner: () => <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>,
+        Form: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <path className="icon-anim-droplet" d="M12 10.2c0 0-2.7 3-2.7 4.7a2.7 2.7 0 0 0 5.4 0c0-1.7-2.7-4.7-2.7-4.7z" fill="currentColor" fillOpacity="0.18"/>
+            <path d="M9 19h6" className="opacity-70"/>
+          </svg>
+        ),
+        Chart: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="6" y1="20" x2="6" y2="14"/>
+            <line x1="12" y1="20" x2="12" y2="9"/>
+            <line x1="18" y1="20" x2="18" y2="5" className="icon-anim-float"/>
+            <path d="M4 11l5-4 4 3 7-6" className="icon-anim-ecg" strokeWidth="1.7"/>
+          </svg>
+        ),
+        Database: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <ellipse cx="12" cy="5" rx="8.5" ry="3"/>
+            <path d="M3.5 5v14c0 1.66 3.8 3 8.5 3s8.5-1.34 8.5-3V5"/>
+            <path d="M3.5 12c0 1.66 3.8 3 8.5 3s8.5-1.34 8.5-3"/>
+            <line x1="8" y1="9.2" x2="16" y2="9.2" className="icon-anim-vault" strokeWidth="1.6"/>
+          </svg>
+        ),
+        Clipboard: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <rect x="8" y="2" width="8" height="4" rx="1"/>
+            <path d="M9 13l2 2 4-4" className="icon-anim-sparkle"/>
+          </svg>
+        ),
+        Users: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        ),
+        Activity: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 12h3.5l2.5-6.5 3.5 13 3.5-8.5 2 2H22" className="icon-anim-ecg"/>
+            <circle cx="19" cy="6" r="2" className="icon-anim-sparkle" fill="currentColor" stroke="none"/>
+          </svg>
+        ),
+        Settings: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon-hover-spin">
+            <g className="icon-anim-cog">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </g>
+          </svg>
+        ),
+        Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+        Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+        Hospital: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l7-4 7 4v14"/>
+            <path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/>
+            <g className="icon-anim-sparkle">
+              <line x1="12" y1="7" x2="12" y2="11"/>
+              <line x1="10" y1="9" x2="14" y2="9"/>
+            </g>
+          </svg>
+        ),
+        DropletShield: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10.2" strokeDasharray="3 3" strokeOpacity="0.45" className="icon-anim-orbit"/>
+            <g className="icon-anim-droplet">
+              <path d="M12 4.3c0 0-4 4.5-4 7.2a4 4 0 0 0 8 0c0-2.7-4-7.2-4-7.2z" fill="currentColor" fillOpacity="0.2"/>
+              <path d="M12 9.5v3.4M10.3 11.2h3.4" strokeWidth="1.7"/>
+            </g>
+            <path d="M5.2 17.5c1.5-1.2 3.1-1.3 4.8-.6l2 .8c.9.3 1.7.3 2.5 0l2-.8c1.7-.7 3.3-.6 4.8.6" strokeWidth="1.8"/>
+          </svg>
+        ),
+        SwitchCenter: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon-hover-spin">
+            <path d="M21 7H7"/>
+            <polyline points="11 3 7 7 11 11"/>
+            <path d="M3 17h14"/>
+            <polyline points="13 13 17 17 13 21"/>
+          </svg>
+        ),
+        TursoSync: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"/>
+            <path d="M4.5 5.5v13c0 1.38 3.36 2.5 7.5 2.5s7.5-1.12 7.5-2.5v-13"/>
+            <g className="icon-anim-float">
+              <path d="M12 10.5v5.5"/>
+              <polyline points="9.5 13.5 12 16 14.5 13.5"/>
+            </g>
+          </svg>
+        ),
+        LogoEdit: () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="3"/>
+            <circle cx="8.5" cy="9.5" r="1.5" className="icon-anim-sparkle"/>
+            <path d="M21 15l-5-5L5 20"/>
+          </svg>
+        ),
         WHOLogo: () => (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
              <path d="M12 3v18" strokeWidth={2} strokeLinecap="round"/>
@@ -367,25 +493,33 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
           );
       };
 
-      const FormCheckbox = ({ checked, onChange, label, readOnly = false }) => (
-         <div className={`flex items-center mb-0.5 print:mb-0 ${readOnly ? '' : 'cursor-pointer select-none'}`} onClick={() => !readOnly && onChange && onChange(!checked)}>
-            <div className={`form-checkbox ${checked ? 'checked' : ''}`}></div>
+      const FormCheckbox = ({ checked, onChange, label, readOnly = false, title = '', activeClass = '' }: { checked: boolean; onChange?: (v: boolean) => void; label: string; readOnly?: boolean; title?: string; activeClass?: string }) => (
+         <div
+            title={title || undefined}
+            className={`flex items-center mb-0.5 print:mb-0 ${readOnly ? '' : 'cursor-pointer select-none rounded-lg px-1 py-0.5 transition-colors print:p-0 print:bg-transparent print:rounded-none'} ${!readOnly && checked && activeClass ? activeClass : (!readOnly ? 'hover:bg-slate-100/70' : '')}`}
+            onClick={() => !readOnly && onChange && onChange(!checked)}
+         >
+            <div className={`form-checkbox shrink-0 ${checked ? 'checked' : ''}`}></div>
             <span className="text-[10px] md:text-[11px] leading-tight print:text-[12pt] print:font-bold print:tracking-tight">{label}</span>
          </div>
       );
       
-      const FormRadio = ({ checked, onChange, label, readOnly = false }) => (
-         <div className={`flex items-center mb-0.5 print:mb-0 ${readOnly ? '' : 'cursor-pointer select-none'}`} onClick={() => !readOnly && onChange && onChange()}>
-            <div className={`form-radio ${checked ? 'checked' : ''}`}></div>
+      const FormRadio = ({ checked, onChange, label, readOnly = false, title = '', activeClass = '' }: { checked: boolean; onChange?: () => void; label: string; readOnly?: boolean; title?: string; activeClass?: string }) => (
+         <div
+            title={title || undefined}
+            className={`flex items-center mb-0.5 print:mb-0 ${readOnly ? '' : 'cursor-pointer select-none rounded-lg px-1 py-0.5 transition-colors print:p-0 print:bg-transparent print:rounded-none'} ${!readOnly && checked && activeClass ? activeClass : (!readOnly ? 'hover:bg-slate-100/70' : '')}`}
+            onClick={() => !readOnly && onChange && onChange()}
+         >
+            <div className={`form-radio shrink-0 ${checked ? 'checked' : ''}`}></div>
             <span className="text-[10px] md:text-[11px] leading-tight print:text-[12pt] print:font-bold print:tracking-tight">{label}</span>
          </div>
       );
       
-      const FormInputRow = ({ label, value, onChange, type="text", readOnly = false, options = null }) => (
-         <div className="flex flex-col md:flex-row md:items-center mb-3 md:mb-1 print:mb-1 print:flex-row print:items-center form-input-row">
-            <label className="text-xs font-bold text-gray-700 mb-1 md:mb-0 md:w-32 flex-shrink-0 print:w-36 print:text-[12px] print:mb-0">{label}</label>
+      const FormInputRow = ({ label, value, onChange, type="text", readOnly = false, options = null }: { label: any; value: any; onChange?: any; type?: string; readOnly?: boolean; options?: any }) => (
+         <div className="flex flex-col md:flex-row md:items-center mb-3 md:mb-1.5 print:mb-1 print:flex-row print:items-center form-input-row">
+            <label className="text-xs font-bold text-slate-700 mb-1 md:mb-0 md:w-32 flex-shrink-0 print:w-36 print:text-[12px] print:mb-0">{label}</label>
             {readOnly ? (
-               <div className="form-input-print-text w-full">{value !== undefined && value !== null ? value : ''}</div>
+               <div className="form-input-print-text w-full bg-white/80 border border-slate-200 rounded-lg py-1 px-2 text-center font-bold text-slate-800 print:rounded-md print:border-slate-300">{value !== undefined && value !== null ? value : ''}</div>
             ) : (
                <>
                  {options && options.length > 0 ? (
@@ -408,20 +542,100 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
             const has = opp.indications.includes(id);
             onChange({ ...opp, indications: has ? opp.indications.filter(x => x !== id) : [...opp.indications, id] });
          };
+
+         const hasInd = opp.indications && opp.indications.length > 0;
+         const hasAct = Boolean(opp.action);
+         const hasAny = hasInd || hasAct || Boolean(opp.gloves);
+         const isComplete = hasInd && hasAct;
+         const isPartial = (hasInd && !hasAct) || (!hasInd && hasAct);
+
+         const rowScreenBg = !readOnly
+            ? isComplete
+               ? 'bg-emerald-50/30 hover:bg-emerald-50/55 print:bg-white'
+               : isPartial
+                  ? 'bg-amber-50/45 hover:bg-amber-50/70 print:bg-white'
+                  : 'bg-white hover:bg-sky-50/45 print:bg-white'
+            : 'bg-white hover:bg-orange-50';
+
+         const numCellScreenBg = !readOnly
+            ? isComplete
+               ? 'bg-emerald-100/80 text-emerald-900'
+               : isPartial
+                  ? 'bg-amber-100/80 text-amber-900'
+                  : 'bg-[#ffe4cc] text-slate-900'
+            : 'bg-[#ffe4cc] text-gray-900';
+
          return (
-            <tr className={`border-b border-gray-400 bg-white hover:bg-orange-50 transition-colors ${readOnly ? 'opp-row-readonly' : 'h-32 md:h-24 print-opp-row'}`}>
-               <td className="bg-[#ffe4cc] text-center font-bold text-sm border-r border-gray-400 w-8 text-gray-900 print:w-[15%] print:border-r-2 print:border-black print:bg-[#ffe4cc]">{index + 1}</td>
-               <td className="p-2 md:p-1 border-r border-gray-400 align-top w-32 md:w-28 print:p-0.5 print:w-[40%] print:border-r-2 print:border-black">
-                  <div className="flex flex-col gap-1.5 md:gap-0">
-                    {INDICATIONS.map(ind => (<FormCheckbox key={ind.id} label={ind.label} checked={opp.indications.includes(ind.id)} onChange={() => toggleInd(ind.id)} readOnly={readOnly} />))}
+            <tr className={`border-b border-slate-300 print:border-gray-400 transition-colors ${rowScreenBg} ${readOnly ? 'opp-row-readonly' : 'h-32 md:h-24 print-opp-row'}`}>
+               <td className={`${numCellScreenBg} text-center font-bold text-sm border-r border-slate-300 w-8 print:w-[15%] print:border-r-2 print:border-black print:bg-[#ffe4cc] print:text-gray-900 align-middle relative`}>
+                  <div className="flex flex-col items-center justify-center gap-1">
+                     <span className="font-mono tabular-nums">{index + 1}</span>
+                     {!readOnly && hasAny && (
+                        <button
+                           type="button"
+                           onClick={() => onChange({ ...opp, indications: [], action: '', gloves: false })}
+                           title="مسح اختيارات هذه الفرصة"
+                           className="no-print w-5 h-5 rounded-md bg-white/85 hover:bg-rose-100 text-slate-400 hover:text-rose-600 border border-slate-200/80 flex items-center justify-center transition-colors"
+                        >
+                           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                     )}
+                     {!readOnly && isPartial && (
+                        <span className="no-print w-1.5 h-1.5 rounded-full bg-amber-500" title="فرصة غير مكتملة: يرجى تحديد المؤشر والإجراء معاً"></span>
+                     )}
+                  </div>
+               </td>
+               <td className="p-2 md:p-1 border-r border-slate-300 print:border-gray-400 align-top w-32 md:w-28 print:p-0.5 print:w-[40%] print:border-r-2 print:border-black">
+                  <div className="flex flex-col gap-1 md:gap-0">
+                    {INDICATIONS.map(ind => (
+                       <FormCheckbox
+                          key={ind.id}
+                          label={ind.label}
+                          title={ind.fullLabel}
+                          checked={opp.indications.includes(ind.id)}
+                          onChange={() => toggleInd(ind.id)}
+                          readOnly={readOnly}
+                          activeClass="bg-orange-50/90 text-orange-950 font-semibold"
+                       />
+                    ))}
                   </div>
                </td>
                <td className="p-2 md:p-1 align-top print:p-0.5 print:w-[45%]">
-                  <div className="flex flex-col gap-1.5 md:gap-0">
-                    <FormCheckbox label="HR" checked={opp.action === 'HR'} onChange={(v) => !readOnly && onChange({ ...opp, action: v ? 'HR' : '' })} readOnly={readOnly} />
-                    <FormCheckbox label="HW" checked={opp.action === 'HW'} onChange={(v) => !readOnly && onChange({ ...opp, action: v ? 'HW' : '' })} readOnly={readOnly} />
-                    <FormRadio label="missed" checked={opp.action === 'Missed' || opp.action === 'None'} onChange={() => !readOnly && onChange({ ...opp, action: 'Missed' })} readOnly={readOnly} />
-                    <div className="mt-1 md:mt-0.5"><FormRadio label="gloves" checked={opp.gloves} onChange={() => !readOnly && onChange({ ...opp, gloves: !opp.gloves })} readOnly={readOnly} /></div>
+                  <div className="flex flex-col gap-1 md:gap-0">
+                    <FormCheckbox
+                       label="HR"
+                       title="Hand Rub (Alcohol-based)"
+                       checked={opp.action === 'HR'}
+                       onChange={(v) => !readOnly && onChange({ ...opp, action: v ? 'HR' : '' })}
+                       readOnly={readOnly}
+                       activeClass="bg-emerald-50 text-emerald-900 font-bold"
+                    />
+                    <FormCheckbox
+                       label="HW"
+                       title="Hand Wash (Soap & Water)"
+                       checked={opp.action === 'HW'}
+                       onChange={(v) => !readOnly && onChange({ ...opp, action: v ? 'HW' : '' })}
+                       readOnly={readOnly}
+                       activeClass="bg-teal-50 text-teal-900 font-bold"
+                    />
+                    <FormRadio
+                       label="missed"
+                       title="Missed Opportunity"
+                       checked={opp.action === 'Missed' || opp.action === 'None'}
+                       onChange={() => !readOnly && onChange({ ...opp, action: 'Missed' })}
+                       readOnly={readOnly}
+                       activeClass="bg-rose-50 text-rose-800 font-bold"
+                    />
+                    <div className="mt-1 md:mt-0.5">
+                       <FormRadio
+                          label="gloves"
+                          title="Gloves worn during opportunity"
+                          checked={opp.gloves}
+                          onChange={() => !readOnly && onChange({ ...opp, gloves: !opp.gloves })}
+                          readOnly={readOnly}
+                          activeClass="bg-sky-50 text-sky-900 font-semibold"
+                       />
+                    </div>
                   </div>
                </td>
             </tr>
@@ -440,14 +654,14 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 
          return (
             <div className="prof-col flex flex-col h-full print:h-auto prof-col-container">
-               <div className="bg-[#ffe4cc] p-1 border-b border-gray-400 print:border-b-2 print:border-black h-12 md:h-10 flex flex-col justify-center prof-header-row">
+               <div className="bg-[#ffe4cc] p-1 border-b border-slate-400 print:border-b-2 print:border-black h-12 md:h-10 flex flex-col justify-center prof-header-row">
                   <div className="flex justify-between items-center px-1 h-full print:h-auto w-full">
                      <span className="font-bold text-xs shrink-0 mr-1 prof-cat-label text-gray-900">Prof.cat</span>
                      {readOnly ? (
                         <div className="text-[10px] font-bold bg-white px-2 py-0.5 border border-gray-400 truncate w-full text-center flex items-center justify-center h-6 prof-cat-val-container print:h-auto print:leading-none">{prof.categoryName || 'N/A'}</div>
                      ) : (
                         <React.Fragment>
-                           <select className="border border-gray-400 text-sm md:text-xs h-8 md:h-auto w-28 md:w-28 bg-white print:hidden focus:ring-1 focus:ring-orange-500 rounded" value={prof.categoryCode} onChange={(e) => { const cat = profCategories.find(c => c.code === e.target.value); onUpdate({ ...prof, categoryCode: e.target.value, categoryName: cat ? cat.name : '' }); }}>
+                           <select className="border border-slate-300 text-sm md:text-xs h-8 md:h-auto w-36 md:w-28 bg-white/95 print:hidden focus:ring-2 focus:ring-sky-300 focus:border-sky-500 outline-none rounded-lg px-1.5 font-semibold" value={prof.categoryCode} onChange={(e) => { const cat = profCategories.find(c => c.code === e.target.value); onUpdate({ ...prof, categoryCode: e.target.value, categoryName: cat ? cat.name : '' }); }}>
                              <option value="">Select...</option>{profCategories.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                            </select>
                            <div className="hidden print:flex text-[10px] font-bold bg-white px-2 py-0.5 border border-gray-400 truncate w-full text-center items-center justify-center h-auto leading-none prof-cat-val-container">{prof.categoryName || ''}</div>
@@ -456,7 +670,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                   </div>
                </div>
                <table className="w-full text-left border-collapse prof-col-table">
-                  <thead className="opp-header"><tr className="bg-[#ffe4cc] border-b border-gray-800 print:border-b-2 print:border-black text-[10px] font-bold text-gray-900"><th className="border-r border-gray-400 text-center w-8 py-1 print:w-[15%] print:text-center print:border-r-2 print:border-black">Opp.</th><th className="border-r border-gray-400 pl-2 print:w-[40%] print:border-r-2 print:border-black print:text-left">Indication</th><th className="pl-2 print:w-[45%] print:text-left">HH Action</th></tr></thead>
+                  <thead className="opp-header"><tr className="bg-[#ffe4cc] border-b border-slate-700 print:border-b-2 print:border-black text-[10px] font-bold text-gray-900"><th className="border-r border-slate-400 text-center w-8 py-1 print:w-[15%] print:text-center print:border-r-2 print:border-black">Opp.</th><th className="border-r border-slate-400 pl-2 print:w-[40%] print:border-r-2 print:border-black print:text-left">Indication</th><th className="pl-2 print:w-[45%] print:text-left">HH Action</th></tr></thead>
                   <tbody>{opportunities.map((opp, idx) => (<OpportunityBlock key={idx} index={idx} opp={opp} readOnly={readOnly} onChange={(u) => !readOnly && onUpdate({ ...prof, opportunities: opportunities.map((o,i) => i === idx ? u : o) })} />))}</tbody>
                </table>
             </div>
@@ -717,6 +931,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
         const [formSaved, setFormSaved] = useState(false);
         const [allSessions, setAllSessions] = useState([]);
         const [sessionsLoaded, setSessionsLoaded] = useState(false);
+        const [mobileActiveCol, setMobileActiveCol] = useState(0);
 
         const fetchAllSessions = () => {
             setSessionsLoaded(false);
@@ -915,6 +1130,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
              }));
              
              setProfessionals([{ id: Math.random(), categoryCode: '', categoryName: '', opportunities: [] },{ id: Math.random(), categoryCode: '', categoryName: '', opportunities: [] },{ id: Math.random(), categoryCode: '', categoryName: '', opportunities: [] },{ id: Math.random(), categoryCode: '', categoryName: '', opportunities: [] }]);
+             setMobileActiveCol(0);
              setFormSaved(false);
              setMessage(null);
              if(onSubmitSuccess) onSubmitSuccess();
@@ -943,70 +1159,215 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 
         const isReadOnly = formSaved || isSubmitting;
 
+        const liveStats = useMemo(() => {
+            let totalOpp = 0;
+            let hr = 0;
+            let hw = 0;
+            let missed = 0;
+            let gloves = 0;
+            let incomplete = 0;
+            const colCounts = [0, 0, 0, 0];
+
+            professionals.forEach((p, cIdx) => {
+                (p.opportunities || []).forEach((o: any) => {
+                    const hasInd = o.indications && o.indications.length > 0;
+                    const hasAct = Boolean(o.action);
+                    if (hasInd || hasAct) {
+                        totalOpp++;
+                        if (cIdx < 4) colCounts[cIdx]++;
+                        if (o.action === 'HR') hr++;
+                        else if (o.action === 'HW') hw++;
+                        else if (o.action === 'Missed' || o.action === 'None') missed++;
+                        if (o.gloves) gloves++;
+                        if ((hasInd && !hasAct) || (!hasInd && hasAct)) incomplete++;
+                    }
+                });
+            });
+            const act = hr + hw;
+            const compliancePct = totalOpp > 0 ? ((act / totalOpp) * 100).toFixed(1) : '0.0';
+            return { totalOpp, hr, hw, missed, gloves, incomplete, act, compliancePct, colCounts };
+        }, [professionals]);
+
+        const complianceNum = Number(liveStats.compliancePct);
+        const complianceColor =
+            liveStats.totalOpp === 0
+                ? 'text-sky-700 bg-sky-50 border-sky-200'
+                : complianceNum >= 80
+                    ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                    : complianceNum >= 60
+                        ? 'text-amber-700 bg-amber-50 border-amber-200'
+                        : 'text-rose-700 bg-rose-50 border-rose-200';
+
         return (
-          <div className="bg-white mx-auto max-w-[1000px] paper-container shadow-xl min-h-screen print:min-h-0 mb-8 print:shadow-none print:m-0 print:w-full transition-all duration-300 print-centered-page print-last-page">
+          <div className="bg-white/95 backdrop-blur-md print:bg-white print:backdrop-blur-none mx-auto max-w-[1000px] paper-container border border-sky-200/70 shadow-[0_14px_38px_-14px_rgba(15,23,42,0.12)] min-h-screen print:min-h-0 mb-8 print:shadow-none print:border-none print:m-0 print:w-full transition-all duration-300 print-centered-page print-last-page animate-fade-in">
              <WHOHeader small={true} settings={settings} />
              <div className="p-4 md:p-6 print:p-0">
-                <div className="flex justify-between items-end border-b-2 border-gray-200 pb-1 mb-4 print:mb-2">
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-500 print:mb-1">Observation Form</h1>
-                    <div className="flex items-center gap-3">
-                        {formSaved && <div className="text-green-600 font-bold text-sm bg-green-50 px-2 py-1 rounded border border-green-200 no-print flex items-center gap-1"><span className="text-lg">✓</span> Saved</div>}
-                        <button onClick={() => window.print()} className="no-print text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-colors">
+                <div className="flex justify-between items-end border-b-2 border-slate-200/80 pb-2 mb-4 print:mb-2">
+                    <h1 className="text-xl md:text-2xl font-extrabold text-slate-700 print:mb-1 flex items-center gap-2">
+                       <span className="no-print text-sky-600"><Icons.Form /></span>
+                       <span>Observation Form</span>
+                    </h1>
+                    <div className="flex items-center gap-2.5">
+                        {formSaved && <div className="text-emerald-700 font-bold text-sm bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 no-print flex items-center gap-1.5"><Icons.Check /> Saved</div>}
+                        <button onClick={() => window.print()} className="no-print text-slate-700 hover:text-sky-700 bg-sky-50/80 hover:bg-sky-100/80 border border-sky-200/80 px-3.5 py-1.5 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all active:scale-95">
                             <Icons.Download /> <span className="hidden md:inline">Save PDF</span>
                         </button>
                     </div>
                 </div>
+
+                {/* Live Session Telemetry Strip (Screen Only) */}
+                <div className="no-print mb-4 bg-gradient-to-l from-sky-50/80 via-white to-orange-50/40 border border-sky-200/80 rounded-2xl p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3" dir="rtl">
+                    <div className="flex items-center gap-2.5">
+                        <span className="w-9 h-9 rounded-xl bg-white border border-sky-200 text-sky-600 flex items-center justify-center shrink-0 shadow-2xs">
+                            <Icons.Activity />
+                        </span>
+                        <div className="font-['Cairo']">
+                            <div className="text-xs font-bold text-slate-800">المؤشر الحي للجلسة الحالية</div>
+                            <div className="text-[11px] text-slate-500">
+                                {liveStats.incomplete > 0 ? (
+                                    <span className="text-amber-700 font-semibold">يوجد {liveStats.incomplete} فرصة ناقصة (تحتاج مؤشر + إجراء معاً)</span>
+                                ) : (
+                                    <span>الفرص المكتملة تُحتسب تلقائياً في نسبة الامتثال</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 font-mono tabular-nums text-xs">
+                        <div className={`px-3 py-1.5 rounded-xl border font-extrabold flex items-center gap-1.5 ${complianceColor}`}>
+                            <span className="font-['Cairo'] font-bold text-[11px]">الامتثال:</span>
+                            <span className="text-sm">{liveStats.compliancePct}%</span>
+                        </div>
+                        <div className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold" title="Total Opportunities">
+                            Opp: <span className="text-slate-900">{liveStats.totalOpp}</span>
+                        </div>
+                        <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50/80 border border-emerald-200 text-emerald-800 font-bold" title="Alcohol Hand Rub">
+                            HR: <span>{liveStats.hr}</span>
+                        </div>
+                        <div className="px-2.5 py-1.5 rounded-xl bg-teal-50/80 border border-teal-200 text-teal-800 font-bold" title="Hand Wash">
+                            HW: <span>{liveStats.hw}</span>
+                        </div>
+                        <div className="px-2.5 py-1.5 rounded-xl bg-rose-50/80 border border-rose-200 text-rose-700 font-bold" title="Missed">
+                            Missed: <span>{liveStats.missed}</span>
+                        </div>
+                    </div>
+                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-x-8 gap-y-0 mb-6 print:mb-2 text-sm print:gap-y-1 print:gap-x-6">
-                   <div>
-                      <FormInputRow label="Facility:" value={currentCenter || session.facility} onChange={e=>setSession({...session, facility: e.target.value})} readOnly={isReadOnly || Boolean(currentCenter)} options={currentCenter ? null : settings?.facilities} />
-                      <FormInputRow label="Service:" value={session.service} onChange={e=>setSession({...session, service: e.target.value})} readOnly={isReadOnly} options={settings?.services} />
-                      <FormInputRow label="Ward:" value={session.ward} onChange={e=>setSession({...session, ward: e.target.value})} readOnly={isReadOnly} options={settings?.wards} />
-                      <FormInputRow label="Department:" value={session.department} onChange={e=>setSession({...session, department: e.target.value})} readOnly={isReadOnly} options={settings?.departments} />
-                      <FormInputRow label="Country**:" value={session.country} onChange={e=>setSession({...session, country: e.target.value})} readOnly={isReadOnly} />
-                   </div>
-                   <div>
-                      <FormInputRow label="Period Number*:" value={session.periodNumber} onChange={e=>setSession({...session, periodNumber: e.target.value})} readOnly={isReadOnly} />
-                      <FormInputRow label="Date (dd/mm/yy):" type="date" value={session.date} onChange={handleDateChange} readOnly={isReadOnly} />
-                      <div className="flex flex-col md:flex-row md:items-center mb-3 md:mb-1 print:mb-1 print:flex-row print:items-center">
-                          <label className="text-xs font-bold text-gray-700 mb-1 md:mb-0 md:w-32 flex-shrink-0 print:w-36 print:text-[12px] print:mb-0">Time:</label>
-                          {isReadOnly ? (
-                              <div className="form-input-print-text w-full">
-                                  <span className="mr-1">{session.startTime}</span>
-                                  <span className="text-gray-400 mx-1">-</span>
-                                  <span>{session.endTime}</span>
-                              </div>
-                          ) : (
-                              <div className="flex items-center w-full">
-                                <input type="time" className="form-input-bg h-9 md:h-7 text-sm w-full md:w-20 mr-2 print:hidden" value={session.startTime} onChange={e=>setSession({...session, startTime: e.target.value})} />
-                                <span className="mr-2 text-gray-400 hidden md:inline print:hidden">/</span>
-                                <input type="time" className="form-input-bg h-9 md:h-7 text-sm w-full md:w-20 print:hidden" value={session.endTime} onChange={e=>setSession({...session, endTime: e.target.value})} />
-                                <div className="hidden print:block form-input-print-text w-full">
-                                  <span className="mr-1">{session.startTime}</span>
-                                  <span className="text-gray-400 mx-1">-</span>
-                                  <span>{session.endTime}</span>
-                                </div>
-                              </div>
-                          )}
+                {/* Session Metadata Card (Light Frosted Surface on Screen, Clean Grid on Print) */}
+                <div className="bg-sky-50/35 border border-sky-200/75 rounded-2xl p-4 mb-5 print:bg-transparent print:border-none print:p-0 print:rounded-none print:mb-2">
+                   <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-x-8 gap-y-0 text-sm print:gap-y-1 print:gap-x-6">
+                      <div>
+                         <FormInputRow label="Facility:" value={currentCenter || session.facility} onChange={e=>setSession({...session, facility: e.target.value})} readOnly={isReadOnly || Boolean(currentCenter)} options={currentCenter ? null : settings?.facilities} />
+                         <FormInputRow label="Service:" value={session.service} onChange={e=>setSession({...session, service: e.target.value})} readOnly={isReadOnly} options={settings?.services} />
+                         <FormInputRow label="Ward:" value={session.ward} onChange={e=>setSession({...session, ward: e.target.value})} readOnly={isReadOnly} options={settings?.wards} />
+                         <FormInputRow label="Department:" value={session.department} onChange={e=>setSession({...session, department: e.target.value})} readOnly={isReadOnly} options={settings?.departments} />
+                         <FormInputRow label="Country**:" value={session.country} onChange={e=>setSession({...session, country: e.target.value})} readOnly={isReadOnly} />
                       </div>
-                      <FormInputRow label="Session duration (mm):" type="number" value={session.duration} readOnly={true} />
-                   </div>
-                   <div>
-                      <FormInputRow label="Session Number*:" value={session.sessionNumber} readOnly={true} />
-                      <FormInputRow label="Observer (initials):" value={session.observer} onChange={e=>setSession({...session, observer: e.target.value})} readOnly={isReadOnly} options={settings?.observers} />
-                      <FormInputRow label="Page N°:" value={session.pageNumber} onChange={e=>setSession({...session, pageNumber: e.target.value})} readOnly={isReadOnly} />
-                      <FormInputRow label="City**:" value={session.city} onChange={e=>setSession({...session, city: e.target.value})} readOnly={isReadOnly} options={settings?.cities} />
+                      <div>
+                         <FormInputRow label="Period Number*:" value={session.periodNumber} onChange={e=>setSession({...session, periodNumber: e.target.value})} readOnly={isReadOnly} />
+                         <FormInputRow label="Date (dd/mm/yy):" type="date" value={session.date} onChange={handleDateChange} readOnly={isReadOnly} />
+                         <div className="flex flex-col md:flex-row md:items-center mb-3 md:mb-1.5 print:mb-1 print:flex-row print:items-center form-input-row">
+                             <label className="text-xs font-bold text-slate-700 mb-1 md:mb-0 md:w-32 flex-shrink-0 print:w-36 print:text-[12px] print:mb-0">Time:</label>
+                             {isReadOnly ? (
+                                 <div className="form-input-print-text w-full bg-white/80 border border-slate-200 rounded-lg py-1 px-2 text-center font-bold text-slate-800">
+                                     <span className="mr-1">{session.startTime}</span>
+                                     <span className="text-gray-400 mx-1">-</span>
+                                     <span>{session.endTime}</span>
+                                 </div>
+                             ) : (
+                                 <div className="flex items-center gap-1.5 w-full">
+                                   <input type="time" className="form-input-bg h-9 md:h-7 text-sm flex-1 min-w-0 font-mono tabular-nums print:hidden" value={session.startTime} onChange={e=>setSession({...session, startTime: e.target.value})} />
+                                   <span className="text-slate-400 font-bold text-xs shrink-0 print:hidden">→</span>
+                                   <input type="time" className="form-input-bg h-9 md:h-7 text-sm flex-1 min-w-0 font-mono tabular-nums print:hidden" value={session.endTime} onChange={e=>setSession({...session, endTime: e.target.value})} />
+                                   <div className="hidden print:block form-input-print-text w-full">
+                                     <span className="mr-1">{session.startTime}</span>
+                                     <span className="text-gray-400 mx-1">-</span>
+                                     <span>{session.endTime}</span>
+                                   </div>
+                                 </div>
+                             )}
+                         </div>
+                         <FormInputRow label="Session duration (mm):" type="number" value={session.duration} readOnly={true} />
+                      </div>
+                      <div>
+                         <FormInputRow label="Session Number*:" value={session.sessionNumber} readOnly={true} />
+                         <FormInputRow label="Observer (initials):" value={session.observer} onChange={e=>setSession({...session, observer: e.target.value})} readOnly={isReadOnly} options={settings?.observers} />
+                         <FormInputRow label="Page N°:" value={session.pageNumber} onChange={e=>setSession({...session, pageNumber: e.target.value})} readOnly={isReadOnly} />
+                         <FormInputRow label="City**:" value={session.city} onChange={e=>setSession({...session, city: e.target.value})} readOnly={isReadOnly} options={settings?.cities} />
+                      </div>
                    </div>
                 </div>
 
-                <div className="border-2 border-gray-800 rounded-lg md:rounded-none overflow-hidden relative print:border-none prof-main-container">
+                {/* WHO 5 Moments Quick Reference Legend (Screen Only) */}
+                <div className="no-print mb-3 px-3 py-2 bg-white/85 border border-slate-200/80 rounded-xl flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
+                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="font-bold text-slate-800 font-['Cairo']">اللحظات الخمس:</span>
+                      {INDICATIONS.map((ind, i) => (
+                         <span key={ind.id} className="inline-flex items-center gap-1" title={ind.fullLabel}>
+                            <span className="font-mono font-bold text-[#F26522]">{ind.label}</span>
+                            <span className="text-slate-400 hidden sm:inline">({i + 1})</span>
+                         </span>
+                      ))}
+                   </div>
+                   <div className="flex items-center gap-2 text-[10px] font-['Cairo']">
+                      <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> مكتملة</span>
+                      <span className="inline-flex items-center gap-1 text-amber-700 font-semibold"><span className="w-2 h-2 rounded-full bg-amber-500"></span> غير مكتملة</span>
+                   </div>
+                </div>
+
+                {/* Mobile Column Switcher (Phone Only, Hidden Desktop & Print) */}
+                <div className="flex md:hidden no-print gap-1.5 mb-3 bg-sky-50/85 p-1.5 rounded-2xl border border-sky-200/80" dir="rtl">
+                   {professionals.map((p, idx) => {
+                      const active = mobileActiveCol === idx;
+                      const count = liveStats.colCounts[idx] || 0;
+                      return (
+                         <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setMobileActiveCol(idx)}
+                            className={`flex-1 py-2 px-1.5 rounded-xl text-[11px] font-bold font-['Cairo'] transition-all flex flex-col items-center justify-center gap-0.5 ${
+                               active
+                                  ? 'bg-gradient-to-b from-[#F26522] to-[#EA580C] text-white shadow-sm'
+                                  : 'bg-white/80 text-slate-600 hover:bg-white border border-slate-200/70'
+                            }`}
+                         >
+                            <span className="truncate max-w-[70px]">{p.categoryName || `عمود ${idx + 1}`}</span>
+                            <span className={`text-[10px] font-mono tabular-nums px-1.5 rounded-md ${active ? 'bg-white/20 text-white' : 'bg-sky-50 text-sky-700'}`}>
+                               {count}/8
+                            </span>
+                         </button>
+                      );
+                   })}
+                </div>
+
+                <div className="border-2 border-slate-700 print:border-gray-800 rounded-2xl md:rounded-xl print:rounded-none overflow-hidden relative print:border-none prof-main-container shadow-2xs print:shadow-none">
                    <div className="flex flex-col md:flex-row print:flex-row w-full prof-cols-row">
                       {professionals.map((prof, idx) => (
-                        <div key={prof.id} className="w-full md:w-1/4 print:w-1/4 shrink-0 border-b-4 border-gray-800 md:border-b-0 md:border-r-2 last:border-b-0 md:last:border-r-0 print:border-r-2 print:border-b-0 print:last:border-r-0 prof-col-wrapper">
+                        <div key={prof.id} className={`w-full md:w-1/4 print:w-1/4 shrink-0 border-b-2 border-slate-300 md:border-b-0 md:border-r-2 md:border-slate-400 last:border-b-0 md:last:border-r-0 print:border-r-2 print:border-b-0 print:last:border-r-0 prof-col-wrapper ${mobileActiveCol === idx ? 'block' : 'hidden md:block print:block'}`}>
                            <ProfessionalColumn prof={prof} pIndex={idx} readOnly={isReadOnly} onUpdate={(u) => { const n = [...professionals]; n[idx] = u; setProfessionals(n); }} profCategories={getProfCategories(settings)} />
                         </div>
                       ))}
                    </div>
+                </div>
+
+                {/* Mobile Next/Prev Column Bar */}
+                <div className="flex md:hidden no-print justify-between items-center mt-2.5 gap-2 font-['Cairo']" dir="rtl">
+                   <button
+                      type="button"
+                      disabled={mobileActiveCol === 0}
+                      onClick={() => setMobileActiveCol(c => Math.max(0, c - 1))}
+                      className="flex-1 py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 disabled:opacity-40 text-xs font-bold active:scale-95 transition"
+                   >
+                      → العمود السابق
+                   </button>
+                   <span className="text-xs font-mono tabular-nums text-slate-500 font-bold px-2">{mobileActiveCol + 1} / 4</span>
+                   <button
+                      type="button"
+                      disabled={mobileActiveCol === 3}
+                      onClick={() => setMobileActiveCol(c => Math.min(3, c + 1))}
+                      className="flex-1 py-2 px-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 disabled:opacity-40 text-xs font-bold active:scale-95 transition"
+                   >
+                      العمود التالي ←
+                   </button>
                 </div>
                 
                 <div className="hidden print:flex print-footer">
@@ -1017,27 +1378,27 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       </div>
                 </div>
 
-                <div className="mt-6 flex flex-col md:flex-row justify-between items-center no-print bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm gap-4">
-                   <div className="text-[11px] text-gray-500 leading-tight hidden md:block">** Optional data fields.</div>
+                <div className="mt-6 flex flex-col md:flex-row justify-between items-center no-print bg-sky-50/50 backdrop-blur-sm p-4 rounded-2xl border border-sky-200/80 shadow-xs gap-4">
+                   <div className="text-[11px] text-slate-500 leading-tight hidden md:block font-medium">** Optional data fields.</div>
                    <div className="flex flex-col md:flex-row gap-3 items-center w-full md:w-auto justify-end">
-                      {message && <span className={`font-bold text-sm font-['Cairo'] ${message.type==='error'?'text-red-600':'text-green-600'}`}>{message.text}</span>}
+                      {message && <span className={`font-bold text-sm font-['Cairo'] ${message.type==='error'?'text-rose-600':'text-emerald-600'}`}>{message.text}</span>}
                       
                       {!formSaved ? (
-                          <button onClick={handleSubmit} disabled={isSubmitting} className="w-full md:w-auto bg-[#F26522] hover:bg-[#d9531e] text-white px-8 py-3 md:py-2 rounded-lg font-bold shadow-md hover:shadow-lg flex items-center justify-center text-base md:text-sm disabled:opacity-50 transition-all transform active:scale-95">
-                              {isSubmitting ? <><Icons.Spinner/> Saving...</> : (initialData ? 'Update Form' : 'Save Form')}
+                          <button onClick={handleSubmit} disabled={isSubmitting} className="w-full md:w-auto bg-gradient-to-r from-[#F26522] to-[#EA580C] hover:from-[#EA580C] hover:to-[#D44908] text-white px-8 py-3 md:py-2 rounded-xl font-bold shadow-[0_6px_16px_-4px_rgba(242,101,34,0.45)] hover:shadow-lg flex items-center justify-center gap-2 text-base md:text-sm disabled:opacity-50 transition-all transform active:scale-95">
+                              {isSubmitting ? <><Icons.Spinner/> Saving...</> : <><Icons.Check /><span>{initialData ? 'Update Form' : 'Save Form'}</span></>}
                           </button>
                       ) : (
                           <>
                               {initialData ? (
-                                  <button onClick={() => { if(onSubmitSuccess) onSubmitSuccess(); }} className="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 md:py-2 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm transition-colors active:scale-95">
+                                  <button onClick={() => { if(onSubmitSuccess) onSubmitSuccess(); }} className="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 md:py-2 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm transition-colors active:scale-95">
                                       Back to Records
                                   </button>
                               ) : (
                                   <>
-                                      <button onClick={() => handleReset('next_page')} className="w-full md:w-auto bg-[#F26522] hover:bg-[#d9531e] text-white px-6 py-3 md:py-2 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm transition-colors active:scale-95">
+                                      <button onClick={() => handleReset('next_page')} className="w-full md:w-auto bg-gradient-to-r from-[#F26522] to-[#EA580C] hover:from-[#EA580C] hover:to-[#D44908] text-white px-6 py-3 md:py-2 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm transition-colors active:scale-95">
                                           Next Page (Same Session)
                                       </button>
-                                      <button onClick={() => handleReset('new_session')} className="w-full md:w-auto bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-6 py-3 md:py-2 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm transition-colors active:scale-95">
+                                      <button onClick={() => handleReset('new_session')} className="w-full md:w-auto bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-6 py-3 md:py-2 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm transition-colors active:scale-95">
                                           New Session
                                       </button>
                                   </>
@@ -1051,14 +1412,14 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
         );
       };
 
-      const StatCard = ({ title, value, subtext, icon, colorClass }) => (
-         <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex items-start justify-between">
+      const StatCard = ({ title, value, subtext, icon, colorClass }: { title: any; value: any; subtext?: any; icon: any; colorClass: string }) => (
+         <div className="glass-panel glass-panel-hover p-5 rounded-2xl flex items-start justify-between print:shadow-none print:border print:border-slate-200 print:bg-white">
              <div>
-                 <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{title}</p>
-                 <h3 className="text-3xl font-bold text-slate-800">{value}</h3>
-                 {subtext && <p className="text-slate-400 text-xs mt-1">{subtext}</p>}
+                 <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1.5">{title}</p>
+                 <h3 className="text-3xl font-mono tabular-nums font-extrabold text-slate-900">{value}</h3>
+                 {subtext && <p className="text-slate-400 text-xs mt-1.5">{subtext}</p>}
              </div>
-             <div className={`p-3 rounded-full ${colorClass} bg-opacity-10 text-opacity-100`}>
+             <div className={`p-3 rounded-xl border ${colorClass}`}>
                  {icon}
              </div>
          </div>
@@ -1221,24 +1582,29 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
         };
 
         return (
-            <div className="max-w-full mx-auto mt-4 print:mt-0 space-y-6 print:space-y-4 dashboard-print-container">
-                <div className="flex flex-col md:flex-row justify-between items-center no-print gap-4">
+            <div className="max-w-full mx-auto mt-4 print:mt-0 space-y-6 print:space-y-4 dashboard-print-container animate-fade-in">
+                <div className="glass-panel rounded-2xl p-4 flex flex-col md:flex-row justify-between items-center no-print gap-4">
                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                       <h2 className="text-xl font-bold text-slate-800">Dashboard</h2>
+                       <div className="flex items-center gap-2">
+                           <span className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center">
+                               <Icons.Activity />
+                           </span>
+                           <h2 className="text-xl font-extrabold text-slate-900">Dashboard</h2>
+                       </div>
                        {currentCenter && (
-                           <span className="text-xs bg-orange-100 text-orange-900 border border-orange-200 font-bold px-2.5 py-1 rounded-lg font-['Cairo'] flex items-center gap-1.5 shadow-2xs">
-                               <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
+                           <span className="text-xs bg-sky-50 text-sky-900 border border-sky-200 font-bold px-3 py-1 rounded-xl font-['Cairo'] flex items-center gap-1.5">
+                               <span className="text-sky-600"><Icons.Hospital /></span>
                                <span className="text-slate-500 font-normal">المركز:</span>
                                <span>{currentCenter}</span>
                            </span>
                        )}
-                       <input type="month" className="border border-slate-300 p-2 rounded-md text-sm focus:ring-2 focus:ring-orange-500 outline-none" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} />
+                       <input type="month" className="border border-slate-300 bg-white p-2 rounded-xl text-sm font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-200/70 outline-none" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} />
                    </div>
                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end font-['Cairo']">
                        <button
                            onClick={handleExportDashboardMonthExcel}
                            disabled={monthSessionsForExport.length === 0 && yearSessionsForExport.length === 0}
-                           className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white px-3.5 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm justify-center"
+                           className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm justify-center"
                            title="تنزيل تقرير الشهر المحدد في شيت إكسيل شامل"
                        >
                            <Icons.Excel />
@@ -1247,13 +1613,13 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                        <button
                            onClick={handleExportDashboardYearExcel}
                            disabled={yearSessionsForExport.length === 0}
-                           className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 disabled:opacity-50 px-3.5 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm justify-center"
+                           className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 disabled:opacity-50 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-2xs justify-center"
                            title="تنزيل التقرير السنوي المجمع في شيت إكسيل"
                        >
                            <Icons.Excel />
                            <span>التقرير السنوي {stats.year} (Excel)</span>
                        </button>
-                       <button onClick={() => window.print()} className="bg-slate-800 text-white px-4 py-2 rounded-md text-xs font-bold flex items-center hover:bg-slate-900 transition-colors shadow-sm justify-center font-sans"><span className="mr-1.5"><Icons.Download/></span> Save as PDF</button>
+                       <button onClick={() => window.print()} className="bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm justify-center font-sans"><Icons.Download/><span>Save as PDF</span></button>
                    </div>
                 </div>
                 
@@ -1285,41 +1651,50 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                        title="Overall Compliance" 
                        value={`${stats.overall.toFixed(2)}%`} 
                        icon={<Icons.Activity/>} 
-                       colorClass="bg-blue-500 text-blue-600"
+                       colorClass="bg-sky-50 border-sky-200 text-sky-600"
                     />
                     <StatCard 
                        title="Total Observations" 
                        value={stats.totalOpp} 
                        subtext="Opportunities recorded"
                        icon={<Icons.Clipboard/>} 
-                       colorClass="bg-orange-500 text-orange-600"
+                       colorClass="bg-orange-50 border-orange-200 text-[#F26522]"
                     />
                     <StatCard 
                        title="Sessions" 
                        value={stats.totalSessions} 
                        subtext="Unique sessions"
                        icon={<Icons.Users/>} 
-                       colorClass="bg-emerald-500 text-emerald-600"
+                       colorClass="bg-teal-50 border-teal-200 text-teal-600"
                     />
-                    <div className="bg-gradient-to-br from-orange-500 to-red-500 text-white p-6 rounded-lg shadow-md flex flex-col justify-center print:shadow-none print:border print:border-slate-200 print:text-black print:bg-none">
-                        <h4 className="font-bold text-white/90 uppercase text-xs tracking-wider print:text-slate-500">Status</h4>
-                        <div className="text-2xl font-bold mt-1">
-                            {stats.overall >= 80 ? 'Excellent' : stats.overall >= 60 ? 'Good' : 'Needs Action'}
+                    <div className="glass-panel glass-panel-hover p-5 rounded-2xl flex items-start justify-between bg-gradient-to-br from-sky-50/90 via-white to-orange-50/60 print:shadow-none print:border print:border-slate-200 print:text-black print:bg-none">
+                        <div>
+                            <h4 className="font-bold text-slate-500 uppercase text-xs tracking-wider mb-1.5">Compliance Status</h4>
+                            <div className={`text-2xl font-extrabold ${stats.overall >= 80 ? 'text-emerald-600' : stats.overall >= 60 ? 'text-amber-600' : 'text-rose-600'}`}>
+                                {stats.overall >= 80 ? 'Excellent' : stats.overall >= 60 ? 'Good' : 'Needs Action'}
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1.5">WHO Benchmark Target</p>
+                        </div>
+                        <div className={`p-3 rounded-xl border ${stats.overall >= 80 ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : stats.overall >= 60 ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon-anim-float">
+                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                              <path d="M9 12l2 2 4-4"/>
+                            </svg>
                         </div>
                     </div>
                 </div>
                 
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-80 print:h-[220px] print:border-none print:shadow-none w-full">
-                     <h3 className="text-sm font-bold text-slate-500 uppercase mb-6 tracking-wide border-b pb-2 flex justify-between items-center">
-                        <span>Annual Compliance Trend ({stats.year})</span>
-                        <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs normal-case">Avg: {stats.annualAverage.toFixed(2)}%</span>
+                <div className="glass-panel p-6 rounded-2xl h-80 print:h-[220px] print:border-none print:shadow-none print:bg-white w-full">
+                     <h3 className="text-sm font-bold text-slate-600 uppercase mb-6 tracking-wide border-b border-slate-200/80 pb-2.5 flex justify-between items-center">
+                        <span>Annual Compliance Trend (<span className="font-mono tabular-nums">{stats.year}</span>)</span>
+                        <span className="bg-sky-50 border border-sky-200 text-sky-800 px-2.5 py-0.5 rounded-lg text-xs normal-case font-mono tabular-nums font-bold">Avg: {stats.annualAverage.toFixed(2)}%</span>
                      </h3>
                      <ResponsiveContainer width="100%" height="90%">
                         <LineChart data={stats.monthlyTrend} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                            <XAxis dataKey="name" tick={{fontSize: 11, fill: '#64748b'}} />
                            <YAxis domain={[0, 100]} tick={{fontSize: 11, fill: '#64748b'}} />
-                           <Tooltip cursor={{fill: '#f1f5f9'}} formatter={(v) => [`${Number(v).toFixed(2)}%`, 'Compliance %']} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} />
+                           <Tooltip cursor={{fill: '#f1f5f9'}} formatter={(v) => [`${Number(v).toFixed(2)}%`, 'Compliance %']} contentStyle={{borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.08)'}} />
                            <Legend />
                            <Line type="monotone" dataKey="compliance" stroke="#F26522" strokeWidth={3} name="Compliance %" dot={{r: 4, strokeWidth: 2}} activeDot={{r: 6}}>
                                <LabelList dataKey="compliance" position="top" offset={10} formatter={(v) => `${Number(v).toFixed(2)}%`} style={{ fontSize: '11px', fontWeight: 'bold', fill: '#c2410c' }} />
@@ -1329,30 +1704,30 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 w-full">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-96 print:h-[220px] print:border-none print:shadow-none">
-                        <h3 className="text-sm font-bold text-slate-500 uppercase mb-6 tracking-wide border-b pb-2">Compliance by Profession</h3>
+                    <div className="glass-panel p-6 rounded-2xl h-96 print:h-[220px] print:border-none print:shadow-none print:bg-white">
+                        <h3 className="text-sm font-bold text-slate-600 uppercase mb-6 tracking-wide border-b border-slate-200/80 pb-2.5">Compliance by Profession</h3>
                         <ResponsiveContainer width="100%" height="90%">
                             <BarChart data={stats.profData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#e2e8f0" />
                                 <XAxis type="number" domain={[0, 100]} hide />
                                 <YAxis type="category" dataKey="name" width={140} tick={{fontSize: 11, fill: '#64748b'}} />
-                                <Tooltip cursor={{fill: '#f1f5f9'}} formatter={(v) => [`${Number(v).toFixed(2)}%`, 'Compliance %']} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} />
-                                <Bar dataKey="compliance" fill="#F26522" name="Compliance %" radius={[0, 4, 4, 0]} barSize={24}>
+                                <Tooltip cursor={{fill: '#f1f5f9'}} formatter={(v) => [`${Number(v).toFixed(2)}%`, 'Compliance %']} contentStyle={{borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.08)'}} />
+                                <Bar dataKey="compliance" fill="#F26522" name="Compliance %" radius={[0, 6, 6, 0]} barSize={24}>
                                     <LabelList dataKey="compliance" position="right" formatter={(v) => `${Number(v).toFixed(2)}%`} style={{ fontSize: '11px', fontWeight: 'bold', fill: '#64748b' }} />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
 
-                     <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-96 print:h-[220px] print:border-none print:shadow-none">
-                        <h3 className="text-sm font-bold text-slate-500 uppercase mb-6 tracking-wide border-b pb-2">Compliance by Indication</h3>
+                     <div className="glass-panel p-6 rounded-2xl h-96 print:h-[220px] print:border-none print:shadow-none print:bg-white">
+                        <h3 className="text-sm font-bold text-slate-600 uppercase mb-6 tracking-wide border-b border-slate-200/80 pb-2.5">Compliance by Indication</h3>
                         <ResponsiveContainer width="100%" height="90%">
                             <BarChart data={stats.indData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#e2e8f0" />
                                 <XAxis type="number" domain={[0, 100]} hide />
                                 <YAxis type="category" dataKey="name" width={180} tick={{fontSize: 11, fill: '#64748b'}} />
-                                <Tooltip cursor={{fill: '#f1f5f9'}} formatter={(v) => [`${Number(v).toFixed(2)}%`, 'Compliance %']} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} />
-                                <Bar dataKey="compliance" fill="#0093d5" name="Compliance %" radius={[0, 4, 4, 0]} barSize={24}>
+                                <Tooltip cursor={{fill: '#f1f5f9'}} formatter={(v) => [`${Number(v).toFixed(2)}%`, 'Compliance %']} contentStyle={{borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.08)'}} />
+                                <Bar dataKey="compliance" fill="#0284C7" name="Compliance %" radius={[0, 6, 6, 0]} barSize={24}>
                                     <LabelList dataKey="compliance" position="right" formatter={(v) => `${Number(v).toFixed(2)}%`} style={{ fontSize: '11px', fontWeight: 'bold', fill: '#64748b' }} />
                                 </Bar>
                             </BarChart>
@@ -1382,14 +1757,14 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
           if (!isOpen) return null;
 
           return (
-              <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 no-print animate-fade-in font-['Cairo']" dir="rtl" onClick={() => !isSaving && onClose()}>
-                  <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-slate-200 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-between border-b pb-3 mb-4">
-                          <div className="flex items-center gap-2">
-                              <span className="text-xl">🖼️</span>
-                              <h3 className="text-lg font-bold text-slate-800">شعارات الترويسة لملفات الطباعة</h3>
+              <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 no-print animate-fade-in font-['Cairo']" dir="rtl" onClick={() => !isSaving && onClose()}>
+                  <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-sky-200/80 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
+                          <div className="flex items-center gap-2.5">
+                              <span className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center"><Icons.LogoEdit /></span>
+                              <h3 className="text-lg font-bold text-slate-900">شعارات الترويسة لملفات الطباعة</h3>
                           </div>
-                          <button onClick={onClose} disabled={isSaving} className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1">✕</button>
+                          <button onClick={onClose} disabled={isSaving} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"><Icons.X /></button>
                       </div>
 
                       <p className="text-xs text-slate-600 mb-4 leading-relaxed">
@@ -1460,8 +1835,8 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                           </div>
 
                           {/* Google Drive Tip */}
-                          <div className="bg-amber-100/70 text-amber-900 border border-amber-300 rounded-lg p-2.5 text-xs flex items-start gap-2">
-                              <span className="text-sm">💡</span>
+                          <div className="bg-sky-50/80 text-sky-900 border border-sky-200 rounded-xl p-3 text-xs flex items-start gap-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-600 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                               <span>تأكد أن إذن مشاركة الصورة في Google Drive هو <strong>"أي شخص لديه الرابط يمكنه العرض" (Anyone with the link)</strong> لكي تظهر الصورة وتُطبع بشكل صحيح.</span>
                           </div>
 
@@ -1666,8 +2041,8 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                 });
             });
 
-            Object.values(groups).forEach(g => {
-                g.sessions.sort((a, b) => {
+            (Object.values(groups) as any[]).forEach((g: any) => {
+                g.sessions.sort((a: any, b: any) => {
                     const dA = a.sessionInfo.date || '';
                     const dB = b.sessionInfo.date || '';
                     if (dA !== dB) return dA.localeCompare(dB);
@@ -1676,12 +2051,12 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                     if (tA !== tB) return tA.localeCompare(tB);
                     return (a.sessionInfo.sessionId || '').localeCompare(b.sessionInfo.sessionId || '');
                 });
-                g.sessions.forEach((s, idx) => {
+                g.sessions.forEach((s: any, idx: number) => {
                     s.sessionInfo.sessionNumber = String(idx + 1);
                 });
             });
 
-            const sortedGroups = Object.values(groups).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+            const sortedGroups = (Object.values(groups) as any[]).sort((a: any, b: any) => b.monthKey.localeCompare(a.monthKey));
             setGroupedMonths(sortedGroups);
         };
 
@@ -2094,7 +2469,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                 if (!group) return null;
 
                 const sortedSessions = [...group.sessions].sort((a,b) => {
-                     return new Date(b.sessionInfo.date) - new Date(a.sessionInfo.date);
+                     return new Date(b.sessionInfo.date).getTime() - new Date(a.sessionInfo.date).getTime();
                 });
 
                 const basicStats = calculateBasicStats(sortedSessions, profCategories);
@@ -2122,7 +2497,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
             if (!group) return null;
 
             const sortedSessions = [...group.sessions].sort((a,b) => {
-                 return new Date(b.sessionInfo.date) - new Date(a.sessionInfo.date);
+                 return new Date(b.sessionInfo.date).getTime() - new Date(a.sessionInfo.date).getTime();
             });
 
             const profCategories = getProfCategories(settings);
@@ -2158,15 +2533,17 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                     <div className="fixed top-4 right-4 z-50 no-print flex items-center gap-2 font-['Cairo']" dir="rtl">
                         <button
                             onClick={() => window.print()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-full shadow-lg font-bold text-xs flex items-center gap-1.5 transition-transform active:scale-95"
+                            className="bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white px-4 py-2 rounded-xl shadow-lg font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
                         >
-                            <span>🖨️ طباعة النموذج</span>
+                            <Icons.Print />
+                            <span>طباعة النموذج</span>
                         </button>
                         <button
                             onClick={() => setViewingSession(null)}
-                            className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-full shadow-lg font-bold text-xs flex items-center gap-2 transition-transform active:scale-95"
+                            className="bg-white/95 hover:bg-slate-100 text-slate-800 border border-slate-300 px-4 py-2 rounded-xl shadow-lg font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
                         >
-                            <span>العودة للسجلات ✕</span>
+                            <Icons.X />
+                            <span>العودة للسجلات</span>
                         </button>
                     </div>
                     <div className="print-centered-page last-page">
@@ -2190,15 +2567,16 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                         {isAdmin && (
                             <button 
                                onClick={openLogoModal} 
-                               className="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-2 rounded-full shadow-lg font-bold text-xs flex items-center gap-1.5 transition-transform active:scale-95" 
+                               className="bg-white/95 hover:bg-amber-50 text-amber-800 border border-amber-300 px-3.5 py-2 rounded-xl shadow-lg font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95" 
                                title="تعديل شعارات الترويسة من Google Drive"
                             >
-                               <span>🖼️ شعارات الترويسة</span>
+                               <Icons.LogoEdit />
+                               <span>شعارات الترويسة</span>
                             </button>
                         )}
                         <button 
                            onClick={() => handleExportExcelMonths(printDataForMonths.map(m => m.monthKey))} 
-                           className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-full shadow-lg font-bold text-xs flex items-center gap-1.5 transition-transform active:scale-95" 
+                           className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl shadow-lg font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95" 
                            title="تنزيل التقرير الحالي في شيت إكسيل"
                         >
                            <Icons.Excel />
@@ -2206,16 +2584,18 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                         </button>
                         <button 
                            onClick={() => window.print()} 
-                           className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-full shadow-lg font-bold text-xs flex items-center gap-1.5 transition-transform active:scale-95" 
+                           className="bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white px-3.5 py-2 rounded-xl shadow-lg font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95" 
                            title="إعادة فتح نافذة الطباعة"
                         >
-                           <span>🖨️ طباعة الآن</span>
+                           <Icons.Print />
+                           <span>طباعة الآن</span>
                         </button>
                         <button 
                            onClick={() => setPrintMode(false)} 
-                           className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-full shadow-lg font-bold text-xs flex items-center gap-2 transition-transform active:scale-95"
+                           className="bg-white/95 hover:bg-slate-100 text-slate-800 border border-slate-300 px-4 py-2 rounded-xl shadow-lg font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
                         >
-                           <span>إغلاق المعاينة ✕</span>
+                           <Icons.X />
+                           <span>إغلاق المعاينة</span>
                         </button>
                      </div>
 
@@ -2291,13 +2671,13 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
             });
 
             return (
-                <div className="max-w-6xl mx-auto mt-4 no-print">
+                <div className="max-w-6xl mx-auto mt-4 no-print animate-fade-in">
                     {/* Notification Toast for Date Updates */}
                     {dateToast && (
-                        <div className={`mb-4 p-3.5 rounded-xl border shadow-sm flex items-center justify-between font-['Cairo'] text-sm font-bold transition-all ${
+                        <div className={`mb-4 p-3.5 rounded-2xl border shadow-sm flex items-center justify-between font-['Cairo'] text-sm font-bold transition-all ${
                             dateToast.type === 'success' 
-                                ? 'bg-green-50 text-green-800 border-green-300' 
-                                : 'bg-red-50 text-red-800 border-red-300'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                                : 'bg-rose-50 text-rose-800 border-rose-200'
                         }`} dir="rtl">
                             <div className="flex items-center gap-2">
                                 <span className="text-base">{dateToast.type === 'success' ? '✓' : '✕'}</span>
@@ -2309,31 +2689,32 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                         </div>
                     )}
 
-                    <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 flex justify-between items-center sticky top-0 z-40">
+                    <div className="glass-panel p-4 rounded-2xl mb-6 flex justify-between items-center sticky top-16 z-40">
                          <div className="flex items-center gap-3">
-                             <button onClick={() => setViewMode('list')} className="text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors" title="العودة لقائمة الشهور">
-                                 <span className="text-lg">←</span>
+                             <button onClick={() => setViewMode('list')} className="text-slate-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 p-2 rounded-xl transition-colors" title="العودة لقائمة الشهور">
+                                 <span className="text-base font-bold">←</span>
                              </button>
                              <div>
-                                 <h2 className="text-xl font-bold text-slate-800">{activeFolderData.monthName}</h2>
-                                 <p className="text-xs text-slate-500">{activeFolderData.sessions.length} Forms Saved</p>
+                                 <h2 className="text-xl font-extrabold text-slate-900">{activeFolderData.monthName}</h2>
+                                 <p className="text-xs text-slate-500 font-mono tabular-nums">{activeFolderData.sessions.length} Forms Saved</p>
                              </div>
                          </div>
                          <div className="flex flex-wrap items-center gap-2 justify-end">
                              {isAdmin && (
-                                 <button onClick={openLogoModal} className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-3 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5 transition-all text-xs font-['Cairo']" title="تعديل شعارات الترويسة للطباعة من Google Drive">
-                                     <span>🖼️ شعارات الترويسة</span>
+                                 <button onClick={openLogoModal} className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3 py-2 rounded-xl font-bold shadow-2xs flex items-center gap-1.5 transition-all text-xs font-['Cairo']" title="تعديل شعارات الترويسة للطباعة من Google Drive">
+                                     <Icons.LogoEdit />
+                                     <span>شعارات الترويسة</span>
                                  </button>
                              )}
-                             <button onClick={() => handleExportExcelMonths([selectedMonth])} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95 text-xs font-['Cairo']" title="تنزيل تقارير هذا الشهر في شيت إكسيل">
+                             <button onClick={() => handleExportExcelMonths([selectedMonth])} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95 text-xs font-['Cairo']" title="تنزيل تقارير هذا الشهر في شيت إكسيل">
                                  <Icons.Excel />
                                  <span>تنزيل التقرير (Excel)</span>
                              </button>
-                             <button onClick={handlePrintAll} className="bg-[#F26522] hover:bg-[#d9531e] text-white px-4 py-2 rounded-lg font-bold shadow-sm flex items-center transition-all active:scale-95 text-xs">
-                                 <span className="mr-1.5"><Icons.Download/></span> Save as PDF (Reports + Forms)
+                             <button onClick={handlePrintAll} className="bg-gradient-to-r from-[#F26522] to-[#EA580C] hover:from-[#EA580C] hover:to-[#D44908] text-white px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95 text-xs">
+                                 <Icons.Download/> Save as PDF (Reports + Forms)
                              </button>
                              {canDelete && (
-                                 <button onClick={() => setDeleteMonthsConfirm([selectedMonth])} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-2 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1 transition-all active:scale-95" title="حذف هذا الشهر بكل سجلاته">
+                                 <button onClick={() => setDeleteMonthsConfirm([selectedMonth])} className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3 py-2 rounded-xl font-bold text-xs shadow-2xs flex items-center gap-1 transition-all active:scale-95" title="حذف هذا الشهر بكل سجلاته">
                                      <Icons.Trash /> Delete Month / حذف
                                  </button>
                              )}
@@ -2502,12 +2883,12 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                                 )}
                                             </td>
                                             <td className="px-6 py-3 text-center">
-                                                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-900 border border-orange-200 shadow-xs" title="رقم الجلسة يتم ترتيبة زمنياً تلقائياً">
+                                                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold font-mono tabular-nums bg-orange-100 text-orange-900 border border-orange-200 shadow-2xs" title="رقم الجلسة يتم ترتيبة زمنياً تلقائياً">
                                                     <span>#{s.sessionInfo.sessionNumber || '-'}</span>
-                                                    <span className="text-[10px] text-orange-600 font-normal hidden lg:inline">(تلقائي)</span>
+                                                    <span className="text-[10px] font-['Cairo'] text-orange-600 font-normal hidden lg:inline">(تلقائي)</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-3 text-center">{s.sessionInfo.pageNumber || '-'}</td>
+                                            <td className="px-6 py-3 text-center font-mono tabular-nums">{s.sessionInfo.pageNumber || '-'}</td>
                                             <td className="px-6 py-3 text-right flex justify-end items-center gap-1.5 whitespace-nowrap">
                                                 <button
                                                     type="button"
@@ -2634,8 +3015,9 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                     />
                                 </div>
 
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-amber-800 text-xs leading-relaxed">
-                                    ℹ️ <strong>ملاحظة:</strong> عند تغيير التاريخ، يقوم البرنامج تلقائياً بإعادة ترتيب جميع جلسات الشهر زمنياً من الأقدم إلى الأحدث، وتحديث رقم الجلسة (Session No) تلقائياً (#1, #2, #3...).
+                                <div className="bg-sky-50/80 border border-sky-200 rounded-xl p-3 mb-5 text-sky-900 text-xs leading-relaxed flex items-start gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-600 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    <div><strong>ملاحظة:</strong> عند تغيير التاريخ، يقوم البرنامج تلقائياً بإعادة ترتيب جميع جلسات الشهر زمنياً من الأقدم إلى الأحدث، وتحديث رقم الجلسة (Session No) تلقائياً (#1, #2, #3...).</div>
                                 </div>
 
                                 <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
@@ -2741,8 +3123,9 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                     </div>
                                 </div>
 
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-amber-800 text-xs leading-relaxed">
-                                    📋 سيتم نسخ كافة بيانات الجلسة والفئات والفرص بالكامل، مع توليد معرّف فريد جديد، وسيتم تلقائياً إعادة ترقيم جلسات هذا الشهر زمنياً وإعطاء الجلسة المنسوخة رقمها الصحيح.
+                                <div className="bg-sky-50/80 border border-sky-200 rounded-xl p-3 mb-5 text-sky-900 text-xs leading-relaxed flex items-start gap-2">
+                                    <span className="text-sky-600 shrink-0 mt-0.5"><Icons.Clipboard /></span>
+                                    <span>سيتم نسخ كافة بيانات الجلسة والفئات والفرص بالكامل، مع توليد معرّف فريد جديد، وسيتم تلقائياً إعادة ترقيم جلسات هذا الشهر زمنياً وإعطاء الجلسة المنسوخة رقمها الصحيح.</span>
                                 </div>
 
                                 <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
@@ -2773,33 +3156,39 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 
         // MAIN LIST VIEW (Grouped by Month)
         return (
-          <div className="max-w-4xl mx-auto no-print mt-6">
-             <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                 <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">Records Database</h2>
-                        <p className="text-sm text-slate-500">Monthly Archives & Reports</p>
+          <div className="max-w-4xl mx-auto no-print mt-6 animate-fade-in">
+             <div className="glass-panel rounded-2xl overflow-hidden">
+                 <div className="px-6 py-5 border-b border-slate-200/80 bg-white/70 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center shrink-0">
+                           <Icons.Database />
+                        </div>
+                        <div>
+                           <h2 className="text-xl font-extrabold text-slate-900">Records Database</h2>
+                           <p className="text-xs text-slate-500 font-medium">Monthly Archives &amp; WHO Compliance Reports</p>
+                        </div>
                      </div>
                      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                         <button
                             type="button"
                             onClick={() => setShowTursoImportModal(true)}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded shadow-sm text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 font-['Cairo']"
+                            className="bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white px-3.5 py-2 rounded-xl shadow-sm text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 font-['Cairo']"
                             title="جلب واستيراد سجلات المركز السابقة من قاعدة بيانات Turso"
                         >
-                            <span>📥 استيراد من Turso سابقة</span>
+                            <Icons.TursoSync />
+                            <span>استيراد من Turso سابقة</span>
                         </button>
                         {groupedMonths.length > 0 && (
                             <button
                                 onClick={() => handleExportExcelMonths('all')}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded shadow-sm text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 font-['Cairo']"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl shadow-sm text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 font-['Cairo']"
                                 title="تصدير جميع الأشهر والسجلات في ملف إكسيل واحد"
                             >
                                 <Icons.Excel />
                                 <span>تصدير كل التقارير (Excel)</span>
                             </button>
                         )}
-                        <button onClick={fetchRecords} className="text-slate-500 hover:text-slate-800 p-2 bg-white border border-slate-300 rounded shadow-sm text-xs font-bold transition-colors">
+                        <button onClick={fetchRecords} className="text-slate-600 hover:text-sky-700 px-3 py-2 bg-white hover:bg-sky-50 border border-slate-300 hover:border-sky-300 rounded-xl shadow-2xs text-xs font-bold transition-colors">
                            Refresh Data
                         </button>
                      </div>
@@ -2807,15 +3196,15 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                  
                  {/* Month Selection Bar for Direct Printing & Viewing (Supports Multiple Months) */}
                  {groupedMonths.length > 0 && (
-                     <div className="px-6 py-4 bg-orange-50/90 border-b border-orange-200/80 font-['Cairo']" dir="rtl">
+                     <div className="px-6 py-4 bg-sky-50/55 border-b border-sky-200/70 font-['Cairo']" dir="rtl">
                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                              <div className="flex items-center gap-2">
-                                 <span className="text-[#F26522] text-lg"><Icons.Print /></span>
+                                 <span className="text-[#F26522]"><Icons.Print /></span>
                                  <span className="font-bold text-sm text-slate-800">
                                      {canDelete ? 'تحديد الأشهر للطباعة أو تنزيل Excel أو الحذف:' : 'تحديد الأشهر للطباعة أو تنزيل Excel:'}
                                  </span>
-                                 <span className="text-xs bg-orange-100 text-orange-800 font-bold px-2.5 py-0.5 rounded-full border border-orange-200">
-                                     محدد: {selectedMonthsForPrint.length} من {groupedMonths.length} شهر
+                                 <span className="text-xs font-mono tabular-nums bg-white text-sky-800 font-bold px-2.5 py-0.5 rounded-lg border border-sky-200">
+                                     {selectedMonthsForPrint.length} / {groupedMonths.length}
                                  </span>
                              </div>
                              
@@ -2823,14 +3212,14 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                  <button
                                      type="button"
                                      onClick={selectAllMonths}
-                                     className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                                     className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl transition-colors shadow-2xs"
                                  >
                                      تحديد الكل
                                  </button>
                                  <button
                                      type="button"
                                      onClick={deselectAllMonths}
-                                     className="text-xs font-bold text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                                     className="text-xs font-bold text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl transition-colors shadow-2xs"
                                  >
                                      إلغاء التحديد
                                  </button>
@@ -2838,17 +3227,18 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                      <button
                                          type="button"
                                          onClick={openLogoModal}
-                                         className="text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-lg transition-colors shadow-sm flex items-center gap-1 font-['Cairo']"
+                                         className="text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl transition-colors shadow-2xs flex items-center gap-1.5 font-['Cairo']"
                                          title="تعديل شعارات الترويسة للطباعة من Google Drive"
                                      >
-                                         <span>🖼️ شعارات الترويسة</span>
+                                         <Icons.LogoEdit />
+                                         <span>شعارات الترويسة</span>
                                      </button>
                                  )}
                                  <button
                                      type="button"
                                      disabled={selectedMonthsForPrint.length === 0}
                                      onClick={() => handleExportExcelMonths(selectedMonthsForPrint)}
-                                     className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                     className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
                                      title="تنزيل تقارير الأشهر المحددة في شيت إكسيل واحد"
                                  >
                                      <Icons.Excel />
@@ -2858,7 +3248,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                      type="button"
                                      disabled={selectedMonthsForPrint.length === 0}
                                      onClick={() => handlePrintMonths(selectedMonthsForPrint)}
-                                     className="bg-[#F26522] hover:bg-[#d9531e] disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                     className="bg-gradient-to-r from-[#F26522] to-[#EA580C] hover:from-[#EA580C] hover:to-[#D44908] disabled:bg-slate-300 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
                                      title="طباعة تقارير ونماذج الأشهر المحددة في ملف واحد"
                                  >
                                      <Icons.Print />
@@ -2869,7 +3259,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                          type="button"
                                          disabled={selectedMonthsForPrint.length === 0}
                                          onClick={() => setDeleteMonthsConfirm(selectedMonthsForPrint)}
-                                         className="bg-red-600 hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                                         className="bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
                                          title="حذف الأشهر المحددة وسجلاتها نهائياً"
                                      >
                                          <Icons.Trash />
@@ -2882,10 +3272,12 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                  )}
                  
                  {loading ? (
-                     <div className="p-12 text-center text-slate-500"><Icons.Spinner/> Loading database...</div>
+                     <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-2"><Icons.Spinner/><span>Loading database...</span></div>
                  ) : groupedMonths.length === 0 ? (
-                    <div className="text-center text-slate-500 py-12 px-4 flex flex-col items-center font-['Cairo']" dir="rtl">
-                        <div className="opacity-25 mb-3 text-4xl">📁</div>
+                    <div className="text-center text-slate-500 py-14 px-4 flex flex-col items-center font-['Cairo']" dir="rtl">
+                        <div className="w-16 h-16 rounded-2xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center mb-3.5">
+                            <Icons.Database />
+                        </div>
                         <h3 className="font-bold text-base text-slate-800 mb-1">لا توجد سجلات محفوظة حالياً</h3>
                         <p className="text-xs text-slate-500 max-w-md mb-5 leading-relaxed">
                             يمكنك البدء بإدخال نماذج ملاحظة جديدة، أو جلب ونقل سجلات المركز السابقة مباشرة من قاعدة بيانات Turso القديمة.
@@ -2893,9 +3285,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                         <button
                             type="button"
                             onClick={() => setShowTursoImportModal(true)}
-                            className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
+                            className="bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
                         >
-                            <span>📥 جلب سجلات المركز من Turso سابقة</span>
+                            <Icons.TursoSync />
+                            <span>جلب سجلات المركز من Turso سابقة</span>
                         </button>
                     </div>
                  ) : (
@@ -2949,10 +3342,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                         <div className="text-xs text-slate-400 font-mono mt-0.5">{monthDisplay} ({group.monthKey})</div>
                                     </td>
                                     <td className="px-6 py-4 text-center font-medium">
-                                        <span className="bg-slate-100 text-slate-700 py-1 px-3 rounded-full font-bold">{group.sessions.length}</span>
+                                        <span className="bg-sky-50 border border-sky-200/80 text-sky-900 py-1 px-3 rounded-lg font-mono tabular-nums font-bold">{group.sessions.length}</span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${complianceNum >= 80 ? 'bg-green-100 text-green-800' : complianceNum >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-mono tabular-nums font-bold border ${complianceNum >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : complianceNum >= 60 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
                                             {compliance}%
                                         </div>
                                     </td>
@@ -3113,7 +3506,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                               </ul>
                           </div>
 
-                          <p className="text-[11px] text-slate-500 text-center mb-6">⚠️ تنبيه: لا يمكن التراجع عن هذه العملية لاحقاً وسيتم مسح جميع نماذج هذه الأشهر من قاعدة البيانات.</p>
+                          <p className="text-[11px] text-rose-600 font-semibold text-center mb-6 flex items-center justify-center gap-1.5">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                              <span>تنبيه: لا يمكن التراجع عن هذه العملية لاحقاً وسيتم مسح جميع نماذج هذه الأشهر من قاعدة البيانات.</span>
+                          </p>
 
                           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
                               <button 
@@ -3163,10 +3559,10 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
         );
       };
 
-      class ErrorBoundary extends React.Component {
-        constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-        static getDerivedStateFromError(error) { return { hasError: true, error }; }
-        componentDidCatch(error) { console.error(error); }
+      class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
+        constructor(props: { children: React.ReactNode }) { super(props); this.state = { hasError: false, error: null }; }
+        static getDerivedStateFromError(error: any) { return { hasError: true, error }; }
+        componentDidCatch(error: any) { console.error(error); }
         render() { 
           if (this.state.hasError) return (
             <div className="p-4 bg-red-100 text-red-800 rounded m-4 border border-red-200">
@@ -3184,14 +3580,14 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
          return (
              <button 
                 onClick={() => setView(id)} 
-                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all active:scale-95 ${
+                className={`flex items-center gap-2 px-3.5 py-2 text-sm font-bold rounded-xl transition-all active:scale-95 ${
                     isActive 
-                    ? 'bg-orange-50 text-orange-600' 
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-sky-50 to-orange-50/70 text-[#F26522] border border-sky-200/80 shadow-2xs' 
+                    : 'text-slate-500 hover:bg-sky-50/60 hover:text-slate-900 border border-transparent'
                 }`}
              >
-                <span className={isActive ? 'opacity-100' : 'opacity-70'}>{icon}</span>
-                {label}
+                <span className={isActive ? 'opacity-100 text-[#F26522]' : 'opacity-75 text-sky-600'}>{icon}</span>
+                <span>{label}</span>
              </button>
          );
       }
@@ -3199,15 +3595,15 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
       const NavButton = ({ id, label, icon, active, setView }) => (
           <button 
             onClick={() => setView(id)}
-            className={`flex flex-col items-center justify-center w-full py-1 active:scale-90 transition-transform duration-200 ${active ? 'text-[#F26522]' : 'text-slate-400'}`}
+            className={`flex flex-col items-center justify-center w-full py-1 active:scale-90 transition-all duration-200 rounded-xl ${active ? 'text-[#F26522] bg-sky-50/70' : 'text-slate-400 hover:text-slate-600'}`}
           >
-            <div className={`mb-1 ${active ? 'opacity-100' : 'opacity-70'}`}>{icon}</div>
-            <span className="text-[10px] font-medium leading-none">{label}</span>
+            <div className={`mb-0.5 ${active ? 'opacity-100 scale-105' : 'opacity-75'}`}>{icon}</div>
+            <span className="text-[10px] font-bold leading-none">{label}</span>
           </button>
       );
 
       const MobileBottomNav = ({ currentView, setView, canAccessSettings = true, onSwitchCenter, currentCenter }) => (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center px-2 py-2 pb-safe z-50 md:hidden shadow-[0_-2px_10px_rgba(0,0,0,0.03)] backdrop-blur-lg bg-white/90">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/88 backdrop-blur-xl border-t border-sky-200/70 flex justify-around items-center px-2 py-1.5 pb-safe z-50 md:hidden shadow-[0_-4px_20px_rgba(15,23,42,0.06)]">
              <NavButton id="form" label="Form" icon={<Icons.Form/>} active={currentView === 'form'} setView={setView} />
              <NavButton id="dashboard" label="Dash" icon={<Icons.Activity/>} active={currentView === 'dashboard'} setView={setView} />
              <NavButton id="records" label="Records" icon={<Icons.Database/>} active={currentView === 'records'} setView={setView} />
@@ -3217,14 +3613,11 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
              {onSwitchCenter && (
                  <button 
                    onClick={onSwitchCenter}
-                   className="flex flex-col items-center justify-center w-full py-1 active:scale-90 transition-transform duration-200 text-slate-500 hover:text-orange-600 font-['Cairo']"
+                   className="flex flex-col items-center justify-center w-full py-1 active:scale-90 transition-transform duration-200 text-slate-500 hover:text-sky-600 font-['Cairo']"
                    title={`المركز النشط: ${currentCenter || ''} - انقر للتبديل`}
                  >
-                   <div className="mb-1 opacity-80">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600">
-                         <path d="M3 21h18"/>
-                         <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
-                      </svg>
+                   <div className="mb-0.5 text-sky-600">
+                      <Icons.Hospital />
                    </div>
                    <span className="text-[9px] font-bold leading-none truncate max-w-[65px]">{currentCenter ? 'تبديل' : 'المراكز'}</span>
                  </button>
@@ -3248,13 +3641,13 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
               onChange(newItems);
           };
           return (
-              <div className="border border-gray-200 rounded-md p-3 bg-slate-50">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">{label}</label>
+              <div className="border border-sky-200/80 rounded-2xl p-3.5 bg-white/80 shadow-2xs">
+                  <label className="block text-sm font-bold text-slate-800 mb-2">{label}</label>
                   {!readOnly && (
                       <div className="flex gap-2 mb-3">
                           <input 
                               type="text" 
-                              className="flex-1 form-input-bg h-9 px-3 rounded border border-gray-300 text-sm" 
+                              className="flex-1 form-input-bg h-9 px-3 rounded-xl border border-slate-300 text-sm" 
                               value={newItem} 
                               onChange={e => setNewItem(e.target.value)}
                               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } }}
@@ -3262,7 +3655,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                           />
                           <button 
                               onClick={handleAdd}
-                              className="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                              className="bg-sky-600 hover:bg-sky-700 text-white px-3.5 py-1 rounded-xl text-sm font-bold transition-all active:scale-95"
                           >
                               Add
                           </button>
@@ -3407,42 +3800,48 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
           };
 
           return (
-              <div className="bg-white mx-auto max-w-[850px] paper-container shadow-xl min-h-[calc(100vh-150px)] print:min-h-0 p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 mb-6 gap-2">
-                      <h1 className="text-2xl font-bold text-gray-800">Application Settings</h1>
+              <div className="glass-panel mx-auto max-w-[850px] rounded-2xl min-h-[calc(100vh-150px)] print:min-h-0 p-6 animate-fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200/80 pb-4 mb-6 gap-2">
+                      <div className="flex items-center gap-2.5">
+                          <span className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center">
+                              <Icons.Settings />
+                          </span>
+                          <h1 className="text-2xl font-extrabold text-slate-900">Application Settings</h1>
+                      </div>
                   </div>
 
                   {message && (
-                      <div className={`p-3 mb-4 rounded-lg text-sm font-bold font-['Cairo'] ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`} dir="rtl">
+                      <div className={`p-3.5 mb-4 rounded-xl text-sm font-bold font-['Cairo'] ${message.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`} dir="rtl">
                           {message.text}
                       </div>
                   )}
 
                   <div className="space-y-6">
                       <section>
-                          <h2 className="text-lg font-semibold text-gray-700 mb-3 font-['Cairo']">نصوص الترويسة (Headers)</h2>
+                          <h2 className="text-lg font-bold text-slate-800 mb-3 font-['Cairo']">نصوص الترويسة (Headers)</h2>
                           <div className="space-y-3">
                               <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Header 1 (Main Title)</label>
-                                  <input type="text" className="w-full form-input-bg h-10 px-3 rounded border border-gray-300" value={localSettings.header1} onChange={e => handleChange('header1', e.target.value)} />
+                                  <input type="text" className="w-full form-input-bg h-10 px-3 rounded-xl border border-slate-300" value={localSettings.header1} onChange={e => handleChange('header1', e.target.value)} />
                               </div>
                               <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Header 2 (Subtitle)</label>
-                                  <input type="text" className="w-full form-input-bg h-10 px-3 rounded border border-gray-300" value={localSettings.header2} onChange={e => handleChange('header2', e.target.value)} />
+                                  <input type="text" className="w-full form-input-bg h-10 px-3 rounded-xl border border-slate-300" value={localSettings.header2} onChange={e => handleChange('header2', e.target.value)} />
                               </div>
                               <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Header 3 (Form Title)</label>
-                                  <input type="text" className="w-full form-input-bg h-10 px-3 rounded border border-gray-300" value={localSettings.header3} onChange={e => handleChange('header3', e.target.value)} />
+                                  <input type="text" className="w-full form-input-bg h-10 px-3 rounded-xl border border-slate-300" value={localSettings.header3} onChange={e => handleChange('header3', e.target.value)} />
                               </div>
                           </div>
                       </section>
 
-                      <section className="bg-orange-50/60 p-4 rounded-xl border border-orange-200">
+                      <section className="bg-sky-50/45 p-4 rounded-2xl border border-sky-200/80">
                           <div className="flex items-center justify-between mb-3">
-                              <h2 className="text-lg font-bold text-orange-900 font-['Cairo'] flex items-center gap-2">
-                                  <span>🖼️ شعارات الترويسة للطباعة (Header Logos)</span>
+                              <h2 className="text-lg font-bold text-slate-900 font-['Cairo'] flex items-center gap-2">
+                                  <span className="text-sky-600"><Icons.LogoEdit /></span>
+                                  <span>شعارات الترويسة للطباعة (Header Logos)</span>
                               </h2>
-                              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-bold">Google Drive</span>
+                              <span className="text-xs bg-white border border-sky-200 text-sky-700 px-2.5 py-0.5 rounded-lg font-bold">Google Drive</span>
                           </div>
 
                           <p className="text-xs text-gray-600 mb-4 leading-relaxed font-['Cairo']" dir="rtl">
@@ -3530,8 +3929,8 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                           </div>
 
                           {/* Info tip on Google Drive sharing */}
-                          <div className="bg-amber-100/70 text-amber-900 border border-amber-300 rounded-lg p-2.5 text-xs font-['Cairo'] flex items-start gap-2 mb-4" dir="rtl">
-                              <span className="text-base leading-none">💡</span>
+                          <div className="bg-sky-50/90 text-sky-900 border border-sky-200 rounded-xl p-3 text-xs font-['Cairo'] flex items-start gap-2 mb-4" dir="rtl">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-600 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                               <div>
                                   <span className="font-bold">تنبيه هام لرابط Google Drive:</span> تأكد من ضبط إذن مشاركة الصورة في Google Drive على <strong>"أي شخص لديه الرابط يمكنه العرض" (Anyone with the link)</strong> لكي تظهر الصورة وتُطبع دون عوائق.
                               </div>
@@ -3550,34 +3949,34 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       </section>
 
                       {/* Centers Management Section */}
-                      <section className="bg-gradient-to-r from-orange-50/90 via-amber-50/70 to-orange-50/90 p-5 rounded-xl border border-orange-200 font-['Cairo'] shadow-xs" dir="rtl">
+                      <section className="bg-sky-50/45 p-5 rounded-2xl border border-sky-200/80 font-['Cairo']" dir="rtl">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                               <div>
-                                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-orange-600"></span>
+                                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                      <span className="text-sky-600"><Icons.Hospital /></span>
                                       <span>إدارة المراكز والمنشآت الصحية (Centers)</span>
-                                      <span className="text-[10px] bg-orange-200 text-orange-900 font-bold px-2 py-0.5 rounded-full">
-                                          {(localSettings?.facilities || []).length} مركز مسجل
+                                      <span className="text-[11px] font-mono tabular-nums bg-white border border-sky-200 text-sky-800 font-bold px-2 py-0.5 rounded-md">
+                                          {(localSettings?.facilities || []).length}
                                       </span>
                                   </h2>
                                   <p className="text-xs text-slate-600 mt-1">
-                                      المركز النشط حالياً: <strong className="text-orange-950 bg-white px-2.5 py-0.5 rounded-md border border-orange-200 shadow-2xs font-bold">{currentCenter || 'لم يتم اختيار مركز'}</strong>
+                                      المركز النشط حالياً: <strong className="text-sky-900 bg-white px-2.5 py-0.5 rounded-lg border border-sky-200 font-bold">{currentCenter || 'لم يتم اختيار مركز'}</strong>
                                   </p>
                               </div>
                               {onSwitchCenter && (
                                   <button
                                       type="button"
                                       onClick={onSwitchCenter}
-                                      className="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
+                                      className="bg-white hover:bg-sky-50 border border-slate-300 hover:border-sky-300 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl shadow-2xs transition shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
                                   >
                                       <span>شاشة تسجيل وتبديل المراكز</span>
-                                      <span className="text-sm text-orange-600">⇄</span>
+                                      <span className="text-sky-600"><Icons.SwitchCenter /></span>
                                   </button>
                               )}
                           </div>
 
                           {/* Add Center Inline */}
-                          <div className="flex flex-col sm:flex-row gap-2 mb-4 bg-white p-3 rounded-xl border border-orange-200/80 shadow-2xs">
+                          <div className="flex flex-col sm:flex-row gap-2 mb-4 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
                               <input
                                   type="text"
                                   placeholder="أدخل اسم المركز أو المستشفى الجديد..."
@@ -3585,13 +3984,13 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                   onChange={e => setNewCenterInput(e.target.value)}
                                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddNewCenterInSettings(); } }}
                                   disabled={addingCenterLoading}
-                                  className="flex-1 form-input-bg text-right px-3 py-2 rounded-lg border border-slate-300 text-xs focus:border-orange-500 focus:ring-1 focus:ring-orange-200 outline-none"
+                                  className="flex-1 form-input-bg text-right px-3 py-2 rounded-xl border border-slate-300 text-xs focus:border-sky-500 focus:ring-1 focus:ring-sky-200 outline-none"
                               />
                               <button
                                   type="button"
                                   onClick={handleAddNewCenterInSettings}
                                   disabled={addingCenterLoading || !newCenterInput.trim()}
-                                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0"
+                                  className="px-4 py-2 bg-gradient-to-r from-[#F26522] to-[#EA580C] hover:from-[#EA580C] hover:to-[#D44908] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0"
                               >
                                   {addingCenterLoading ? (
                                       <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -3604,7 +4003,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                           {/* Centers List */}
                           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                               {(!localSettings?.facilities || localSettings.facilities.length === 0) && (
-                                  <div className="text-xs text-slate-400 italic text-center py-4 bg-white rounded-lg border border-slate-200">
+                                  <div className="text-xs text-slate-400 italic text-center py-4 bg-white rounded-xl border border-slate-200">
                                       لا توجد مراكز مضافة بعد.
                                   </div>
                               )}
@@ -3615,15 +4014,15 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                           key={idx}
                                           className={`flex items-center justify-between p-3 rounded-xl border transition-all text-xs font-semibold ${
                                               isActive
-                                                  ? 'bg-white border-orange-400 ring-1 ring-orange-200 shadow-2xs'
-                                                  : 'bg-white border-slate-200 hover:border-orange-200'
+                                                  ? 'bg-white border-sky-400 ring-1 ring-sky-200 shadow-2xs'
+                                                  : 'bg-white border-slate-200 hover:border-sky-200'
                                           }`}
                                       >
                                           <div className="flex items-center gap-2.5">
-                                              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 ring-2 ring-emerald-200' : 'bg-slate-300'}`}></span>
+                                              <span className={isActive ? 'text-sky-600' : 'text-slate-400'}><Icons.Hospital /></span>
                                               <span className="text-slate-800 font-bold text-sm">{facName}</span>
                                               {isActive && (
-                                                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                                                  <span className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold px-2 py-0.5 rounded-md">
                                                       النشط حالياً
                                                   </span>
                                               )}
@@ -3633,7 +4032,7 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                                   <button
                                                       type="button"
                                                       onClick={() => onSelectCenter(facName)}
-                                                      className="text-orange-700 hover:text-orange-900 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2.5 py-1 rounded-lg transition text-[11px] font-bold"
+                                                      className="text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg transition text-[11px] font-bold"
                                                   >
                                                       تفعيل المركز
                                                   </button>
@@ -3655,9 +4054,9 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
 
                       <section>
                           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                              <h2 className="text-lg font-semibold text-gray-700">Dropdown Lists</h2>
+                              <h2 className="text-lg font-bold text-slate-800">Dropdown Lists</h2>
                               {currentCenter && (
-                                  <span className="text-xs bg-orange-50 text-orange-800 border border-orange-200 px-2.5 py-1 rounded-lg font-['Cairo'] font-bold">
+                                  <span className="text-xs bg-sky-50 text-sky-800 border border-sky-200 px-2.5 py-1 rounded-lg font-['Cairo'] font-bold">
                                       قوائم خاصة بـ: {currentCenter}
                                   </span>
                               )}
@@ -3673,18 +4072,18 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                       </section>
 
                       {/* Turso Database Migration Card */}
-                      <section className="bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50/70 p-5 rounded-xl border border-purple-200 font-['Cairo'] shadow-xs" dir="rtl">
+                      <section className="bg-gradient-to-l from-sky-50/75 via-cyan-50/40 to-white p-5 rounded-2xl border border-sky-200/80 font-['Cairo']" dir="rtl">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                               <div className="flex items-start gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
-                                      📥
+                                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-500 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                      <Icons.TursoSync />
                                   </div>
                                   <div>
-                                      <h2 className="text-base font-bold text-purple-950 flex items-center gap-2">
+                                      <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                                           <span>جلب السجلات من قاعدة بيانات Turso سابقة للمركز</span>
-                                          <span className="text-[10px] bg-purple-200 text-purple-800 font-bold px-2 py-0.5 rounded-full">ترحيل البيانات</span>
+                                          <span className="text-[10px] bg-sky-100 border border-sky-200 text-sky-800 font-bold px-2 py-0.5 rounded-md">ترحيل معزول</span>
                                       </h2>
-                                      <p className="text-xs text-purple-700 mt-1 leading-relaxed">
+                                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                                           يمكنك ربط قاعدة بيانات Turso القديمة لجلب نماذج وسجلات هذا المركز فقط وقوائمه الخاصة بشكل معزول تماماً دون دمج أو تأثير على أي مركز آخر.
                                       </p>
                                   </div>
@@ -3692,8 +4091,9 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                               <button
                                   type="button"
                                   onClick={() => setShowTursoImportModal(true)}
-                                  className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1.5"
+                                  className="bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1.5"
                               >
+                                  <Icons.TursoSync />
                                   <span>فتح أداة جلب السجلات</span>
                               </button>
                           </div>
@@ -3747,8 +4147,9 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
                                       هل أنت متأكد من حذف المركز:
                                       <span className="block text-rose-700 text-base font-black mt-1">"{centerToDeleteInSettings}"</span>
                                   </p>
-                                  <div className="border-t border-rose-200 pt-2 text-rose-900">
-                                      ⚠️ <strong>تنبيه صارم:</strong> سيتم حذف المركز من الإعدادات و<span className="underline font-bold">حذف جميع جلسات الرصد والملاحظات والإحصائيات التابعة له نهائياً</span> من قاعدة البيانات!
+                                  <div className="border-t border-rose-200 pt-2 text-rose-900 flex items-start gap-1.5">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                      <div><strong>تنبيه صارم:</strong> سيتم حذف المركز من الإعدادات و<span className="underline font-bold">حذف جميع جلسات الرصد والملاحظات والإحصائيات التابعة له نهائياً</span> من قاعدة البيانات!</div>
                                   </div>
                               </div>
 
@@ -3850,46 +4251,42 @@ import { CenterLoginScreen } from './src/components/CenterLoginScreen';
          };
 
          return (
-            <div className="min-h-screen print:min-h-0 bg-slate-50/50 pb-24 md:pb-10 app-container flex flex-col">
+            <div className="min-h-screen print:min-h-0 clinical-futuristic-bg print:bg-white pb-24 md:pb-10 app-container flex flex-col">
                
-               {/* Desktop Navbar */}
-               <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 md:px-6 py-2 no-print shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+               {/* Desktop Frosted Futuristic Clinical Navbar */}
+               <nav className="bg-white/82 backdrop-blur-xl border-b border-sky-200/70 sticky top-0 z-50 px-4 md:px-6 py-2 no-print shadow-[0_4px_20px_-8px_rgba(15,23,42,0.08)]">
                   <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
                       <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                          <div className="flex items-center gap-2.5">
-                             <img src="/favicon.svg" alt="WHO Hand Hygiene" className="w-8 h-8 rounded-lg shadow-sm" />
+                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 via-cyan-600 to-teal-600 flex items-center justify-center text-white shadow-[0_6px_16px_-4px_rgba(2,132,199,0.45)] shrink-0">
+                                <Icons.DropletShield />
+                             </div>
                              <div className="flex flex-col">
-                                <span className="font-bold text-slate-800 text-sm leading-tight">WHO Hand Hygiene</span>
-                                <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Compliance Tool</span>
+                                <span className="font-extrabold text-slate-900 text-sm leading-tight tracking-tight">WHO Hand Hygiene</span>
+                                <span className="text-[10px] text-sky-700 font-mono font-bold uppercase tracking-wider">Infection Control Suite</span>
                              </div>
                          </div>
 
                          {/* Active Center Badge and Switcher in Header */}
                          <div className="flex items-center gap-2 font-['Cairo']" dir="rtl">
-                             <div className="bg-orange-50 border border-orange-200 text-orange-900 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs">
-                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                             <div className="bg-sky-50/90 border border-sky-200/90 text-slate-800 px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                                 <span className="text-sky-600 shrink-0"><Icons.Hospital /></span>
                                  <span className="text-slate-500 font-normal hidden sm:inline">المركز:</span>
-                                 <span className="text-orange-950 font-black truncate max-w-[150px] md:max-w-[220px]" title={currentCenter}>{currentCenter}</span>
+                                 <span className="text-slate-900 font-black truncate max-w-[140px] md:max-w-[220px]" title={currentCenter}>{currentCenter}</span>
                              </div>
                              <button
                                  onClick={handleSwitchCenter}
-                                 className="px-2.5 py-1 text-xs font-bold bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-lg flex items-center gap-1 transition shadow-xs cursor-pointer active:scale-95"
+                                 className="px-2.5 py-1.5 text-xs font-bold bg-white hover:bg-sky-50 border border-slate-300 hover:border-sky-300 text-slate-700 rounded-xl flex items-center gap-1.5 transition shadow-2xs cursor-pointer active:scale-95"
                                  title="تبديل المركز أو تسجيل الخروج منه"
                              >
-                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600">
-                                     <polyline points="16 3 21 3 21 8"></polyline>
-                                     <line x1="4" y1="20" x2="21" y2="3"></line>
-                                     <polyline points="21 16 21 21 16 21"></polyline>
-                                     <line x1="15" y1="15" x2="21" y2="21"></line>
-                                     <line x1="4" y1="4" x2="9" y2="9"></line>
-                                 </svg>
+                                 <span className="text-[#F26522]"><Icons.SwitchCenter /></span>
                                  <span className="text-[11px]">تبديل المركز</span>
                              </button>
                          </div>
                       </div>
                       
                       <div className="hidden md:flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar md:justify-end">
-                          <div className="flex gap-1">
+                          <div className="flex gap-1.5">
                               <NavLink id="form" label="Form" icon={<Icons.Form/>} currentView={view} setView={handleSetView} />
                               <NavLink id="dashboard" label="Dashboard" icon={<Icons.Activity/>} currentView={view} setView={handleSetView} />
                               <NavLink id="records" label="Records" icon={<Icons.Database/>} currentView={view} setView={handleSetView} />
