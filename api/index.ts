@@ -104,6 +104,129 @@ function sanitizeSettingsForRole(fullSettings: any, role: AppRole | null) {
   return publicSettings;
 }
 
+const ALL_EVALUATION_DAYS: number[] = [0, 1, 2, 3, 4, 5, 6];
+
+function normalizeEvaluationDays(raw: unknown): number[] {
+  let list: unknown[] = [];
+  if (Array.isArray(raw)) {
+    list = raw;
+  } else if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) list = parsed;
+    } catch {
+      list = raw.split(",").map(s => s.trim());
+    }
+  }
+  const valid = Array.from(
+    new Set(
+      list
+        .map(v => Number(v))
+        .filter(n => Number.isInteger(n) && n >= 0 && n <= 6)
+    )
+  ).sort((a, b) => a - b);
+  return valid.length > 0 ? valid : [...ALL_EVALUATION_DAYS];
+}
+
+function snapDateToNearestEvaluationDay(dateStr: string, evaluationDays: number[]): string {
+  if (!dateStr || typeof dateStr !== "string") return dateStr;
+  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return dateStr;
+
+  const allowedList = normalizeEvaluationDays(evaluationDays);
+  if (allowedList.length >= 7) return dateStr;
+  const allowed = new Set(allowedList);
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return dateStr;
+
+  const maxDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const clampedDay = Math.min(Math.max(1, day), maxDay);
+  const fmt = (d: number) => `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  if (allowed.has(new Date(Date.UTC(year, month - 1, clampedDay)).getUTCDay())) {
+    return fmt(clampedDay);
+  }
+
+  for (let delta = 1; delta <= maxDay; delta++) {
+    const prevDay = clampedDay - delta;
+    const nextDay = clampedDay + delta;
+    const prevValid = prevDay >= 1 && allowed.has(new Date(Date.UTC(year, month - 1, prevDay)).getUTCDay());
+    const nextValid = nextDay <= maxDay && allowed.has(new Date(Date.UTC(year, month - 1, nextDay)).getUTCDay());
+
+    if (nextValid && !prevValid) return fmt(nextDay);
+    if (prevValid && !nextValid) return fmt(prevDay);
+    if (nextValid && prevValid) return fmt(nextDay);
+  }
+
+  return fmt(clampedDay);
+}
+
+async function adjustSavedSessionDatesToEvaluationDays(
+  targetFacility: string,
+  evaluationDays: number[]
+): Promise<{ adjustedSessionsCount: number }> {
+  const allowed = normalizeEvaluationDays(evaluationDays);
+  if (allowed.length >= 7) {
+    return { adjustedSessionsCount: 0 };
+  }
+
+  const cleanFac = String(targetFacility || "").trim();
+  const res = cleanFac
+    ? await getDb().execute({
+        sql: `SELECT DISTINCT "Session ID" as sid, "Session Date" as sdate FROM Observations WHERE LOWER(TRIM("Facility")) = LOWER(TRIM(?))`,
+        args: [cleanFac]
+      })
+    : await getDb().execute(`SELECT DISTINCT "Session ID" as sid, "Session Date" as sdate FROM Observations`);
+
+  const batchStatements: Array<{ sql: string; args: any[] }> = [];
+  const updatedDateBySessionId = new Map<string, string>();
+
+  for (const row of res.rows || []) {
+    const sid = getRowValue(row, "sid") || getRowValue(row, "Session ID");
+    const oldDate = getRowValue(row, "sdate") || getRowValue(row, "Session Date");
+    if (!sid || !oldDate) continue;
+
+    const newDate = snapDateToNearestEvaluationDay(oldDate, allowed);
+    if (newDate && newDate !== oldDate) {
+      updatedDateBySessionId.set(sid, newDate);
+      if (cleanFac) {
+        batchStatements.push({
+          sql: `UPDATE Observations SET "Session Date" = ? WHERE "Session ID" = ? AND LOWER(TRIM("Facility")) = LOWER(TRIM(?))`,
+          args: [newDate, sid, cleanFac]
+        });
+      } else {
+        batchStatements.push({
+          sql: `UPDATE Observations SET "Session Date" = ? WHERE "Session ID" = ?`,
+          args: [newDate, sid]
+        });
+      }
+    }
+  }
+
+  if (batchStatements.length > 0) {
+    await getDb().batch(batchStatements);
+
+    if (cachedObservations) {
+      cachedObservations.data.forEach(r => {
+        const sid = getRowValue(r, "Session ID");
+        if (sid && updatedDateBySessionId.has(sid)) {
+          const dateKey = Object.keys(r).find(k => k.toLowerCase() === "session date") || "Session Date";
+          r[dateKey] = updatedDateBySessionId.get(sid)!;
+        }
+      });
+      reindexInMemorySessions(cachedObservations.data);
+      cachedObservations.cachedAt = Date.now();
+      cachedObservations.expiresAt = Date.now() + OBSERVATIONS_TTL_MS;
+    }
+    invalidateFacilityCaches(cleanFac || undefined);
+  }
+
+  return { adjustedSessionsCount: updatedDateBySessionId.size };
+}
+
 // Helper to return default settings structure
 function getDefaultSettings() {
   return {
@@ -115,6 +238,7 @@ function getDefaultSettings() {
     adminPassword: DEFAULT_PASSWORDS.adminPassword,
     managerPassword: DEFAULT_PASSWORDS.managerPassword,
     userPassword: DEFAULT_PASSWORDS.userPassword,
+    evaluationDays: [...ALL_EVALUATION_DAYS],
     facilities: [],
     services: [],
     wards: [],
@@ -251,6 +375,9 @@ async function initializeDatabaseOnce() {
     try {
       await getDb().execute(`ALTER TABLE Settings ADD COLUMN "User Password" TEXT`);
     } catch (e) { /* already exists */ }
+    try {
+      await getDb().execute(`ALTER TABLE Settings ADD COLUMN "Evaluation Days" TEXT`);
+    } catch (e) { /* already exists */ }
 
     await getDb().execute(`
       CREATE TABLE IF NOT EXISTS FacilitySettings (
@@ -330,6 +457,7 @@ const SETTINGS_EXPLICIT_COLUMNS = [
   '"Admin Password"',
   '"Manager Password"',
   '"User Password"',
+  '"Evaluation Days"',
   '"Facilities"',
   '"Services"',
   '"Wards"',
@@ -366,6 +494,7 @@ async function getFullSettingsCached(): Promise<any> {
     adminPassword: getRowValue(result.rows[0], "Admin Password") || DEFAULT_PASSWORDS.adminPassword,
     managerPassword: getRowValue(result.rows[0], "Manager Password") || DEFAULT_PASSWORDS.managerPassword,
     userPassword: getRowValue(result.rows[0], "User Password") || DEFAULT_PASSWORDS.userPassword,
+    evaluationDays: normalizeEvaluationDays(getRowValue(result.rows[0], "Evaluation Days")),
     facilities: [],
     services: [],
     wards: [],
@@ -450,15 +579,19 @@ async function saveSettingsToDb(settings: any, existingSettings: any) {
       ? incomingPass.userPassword.trim()
       : (existingSettings?.userPassword || DEFAULT_PASSWORDS.userPassword);
 
+  const finalEvaluationDays = normalizeEvaluationDays(
+    settings.evaluationDays !== undefined ? settings.evaluationDays : existingSettings?.evaluationDays
+  );
+
   const batchStatements: any[] = [];
   for (let i = 0; i < maxLength; i++) {
     batchStatements.push({
       sql: `INSERT INTO Settings (
         "Header 1", "Header 2", "Header 3", "Logo Right", "Logo Left",
-        "Admin Password", "Manager Password", "User Password",
+        "Admin Password", "Manager Password", "User Password", "Evaluation Days",
         "Facilities", "Services", "Wards", "Departments", 
         "Observers", "Cities", "Professional Categories"
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         i === 0 ? (getHeader("header1") || "") : "",
         i === 0 ? (getHeader("header2") || "") : "",
@@ -468,6 +601,7 @@ async function saveSettingsToDb(settings: any, existingSettings: any) {
         i === 0 ? finalAdminPwd : "",
         i === 0 ? finalManagerPwd : "",
         i === 0 ? finalUserPwd : "",
+        i === 0 ? JSON.stringify(finalEvaluationDays) : "",
         facilities[i] ? String(facilities[i]) : "",
         services[i] ? String(services[i]) : "",
         wards[i] ? String(wards[i]) : "",
@@ -494,6 +628,7 @@ async function saveSettingsToDb(settings: any, existingSettings: any) {
       adminPassword: finalAdminPwd,
       managerPassword: finalManagerPwd,
       userPassword: finalUserPwd,
+      evaluationDays: finalEvaluationDays,
       facilities: [...facilities],
       services: [...services],
       wards: [...wards],
@@ -520,6 +655,7 @@ function buildCleanFacilitySettings(facilityName: string, globalSettings: any) {
     adminPassword: globalSettings?.adminPassword || DEFAULT_PASSWORDS.adminPassword,
     managerPassword: globalSettings?.managerPassword || DEFAULT_PASSWORDS.managerPassword,
     userPassword: globalSettings?.userPassword || DEFAULT_PASSWORDS.userPassword,
+    evaluationDays: [...ALL_EVALUATION_DAYS],
     facilities: [...(globalSettings?.facilities || [])],
     services: [],
     wards: [],
@@ -607,6 +743,7 @@ async function saveFacilitySettingsToDb(facilityName: string, incoming: any, glo
     header3: typeof incoming.header3 === 'string' ? incoming.header3 : "أحصائية غسيل الأيدي",
     logoRight: typeof incoming.logoRight === 'string' ? incoming.logoRight : "",
     logoLeft: typeof incoming.logoLeft === 'string' ? incoming.logoLeft : "",
+    evaluationDays: normalizeEvaluationDays(incoming.evaluationDays),
     services: Array.isArray(incoming.services) ? incoming.services.map(String) : [],
     wards: Array.isArray(incoming.wards) ? incoming.wards.map(String) : [],
     departments: Array.isArray(incoming.departments) ? incoming.departments.map(String) : [],
@@ -1041,13 +1178,21 @@ export default async function handler(req: any, res: any) {
         delete sanitizedPayload.rolePasswords;
 
         const targetFacility = String(sanitizedPayload.facility || sanitizedPayload.currentCenter || '').trim();
+        const skipDateAdjustment = Boolean(sanitizedPayload.skipDateAdjustment);
         const updatedSettings = targetFacility
           ? await saveFacilitySettingsToDb(targetFacility, sanitizedPayload, fullSettings)
           : await saveSettingsToDb(sanitizedPayload, fullSettings);
 
+        let adjustedSessionsCount = 0;
+        if (!skipDateAdjustment && Array.isArray(updatedSettings.evaluationDays) && updatedSettings.evaluationDays.length < 7) {
+          const adjustRes = await adjustSavedSessionDatesToEvaluationDays(targetFacility, updatedSettings.evaluationDays);
+          adjustedSessionsCount = adjustRes.adjustedSessionsCount;
+        }
+
         return res.status(200).json({
           success: true,
           token: 'open-access-token',
+          adjustedSessionsCount,
           settings: sanitizeSettingsForRole(updatedSettings, 'admin')
         });
       }

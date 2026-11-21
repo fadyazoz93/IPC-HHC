@@ -18,6 +18,21 @@ import {
 import { exportReportsToExcel } from './src/utils/excelExport';
 import { TursoImportModal } from './src/components/TursoImportModal';
 import { CenterLoginScreen } from './src/components/CenterLoginScreen';
+import { EvaluationDatePicker } from './src/components/EvaluationDatePicker';
+import {
+  EVALUATION_WEEKDAYS,
+  ALL_EVALUATION_DAYS,
+  normalizeEvaluationDays,
+  parseYMD,
+  formatYMD,
+  getTodayLocalYMD,
+  getArabicWeekdayForDate,
+  getEvaluationDatesForMonth,
+  snapDateToNearestEvaluationDay,
+  getNextEvaluationDateInMonth,
+  formatEvaluationDaysSummary,
+  getDaysInMonthUTC,
+} from './src/utils/evaluationDays';
 
 (window as any).React = React;
 (window as any).ReactDOM = ReactDOM;
@@ -953,23 +968,28 @@ declare const google: any;
             fetchAllSessions();
         }, [currentCenter]);
         
-        // Initialize with requested defaults
-        const [session, setSession] = useState({ 
-            facility: (initialData && initialData.sessionInfo && initialData.sessionInfo.facility) || currentCenter || '', 
-            service: '', 
-            ward: '', 
-            department: '', 
-            country: 'جمهورية مصر العربية', 
-            periodNumber: new Date().getMonth() + 1, // Default to current month
-            date: new Date().toISOString().split('T')[0], 
-            startTime: '', 
-            endTime: '', 
-            duration: '', 
-            sessionNumber: '', 
-            observer: '', 
-            pageNumber: '1', 
-            city: '', 
-            sessionId: uuidv4() 
+        // Initialize with requested defaults (snapped to nearest allowed evaluation day)
+        const [session, setSession] = useState(() => {
+            const initialDate = initialData?.sessionInfo?.date
+                || snapDateToNearestEvaluationDay(getTodayLocalYMD(), settings?.evaluationDays);
+            const parsedInit = parseYMD(initialDate);
+            return {
+                facility: (initialData && initialData.sessionInfo && initialData.sessionInfo.facility) || currentCenter || '',
+                service: '',
+                ward: '',
+                department: '',
+                country: 'جمهورية مصر العربية',
+                periodNumber: parsedInit ? parsedInit.month : (new Date().getMonth() + 1),
+                date: initialDate,
+                startTime: '',
+                endTime: '',
+                duration: '',
+                sessionNumber: '',
+                observer: '',
+                pageNumber: '1',
+                city: '',
+                sessionId: uuidv4()
+            };
         });
         
         const [professionals, setProfessionals] = useState([{ id: 1, categoryCode: '', categoryName: '', opportunities: [] },{ id: 2, categoryCode: '', categoryName: '', opportunities: [] },{ id: 3, categoryCode: '', categoryName: '', opportunities: [] },{ id: 4, categoryCode: '', categoryName: '', opportunities: [] }]);
@@ -1009,6 +1029,21 @@ declare const google: any;
              setMessage(null);
           }
         }, [initialData, currentCenter]);
+
+        // Keep new (unsaved) form date aligned with the center's configured Evaluation Days
+        useEffect(() => {
+            if (!initialData && !formSaved && session.date && settings?.evaluationDays) {
+                const snapped = snapDateToNearestEvaluationDay(session.date, settings.evaluationDays);
+                if (snapped && snapped !== session.date) {
+                    const parsed = parseYMD(snapped);
+                    setSession(prev => ({
+                        ...prev,
+                        date: snapped,
+                        periodNumber: parsed ? parsed.month : prev.periodNumber
+                    }));
+                }
+            }
+        }, [settings?.evaluationDays, initialData, formSaved]);
 
         useEffect(() => {
             if(session.startTime && session.endTime && !formSaved) {
@@ -1090,9 +1125,9 @@ declare const google: any;
             const newDate = e.target.value;
             let newPeriod = session.periodNumber;
             if (newDate) {
-                const d = new Date(newDate);
-                if (!isNaN(d.getTime())) {
-                    newPeriod = d.getMonth() + 1;
+                const parsed = parseYMD(newDate);
+                if (parsed) {
+                    newPeriod = parsed.month;
                 }
             }
             setSession(prev => ({ ...prev, date: newDate, periodNumber: newPeriod }));
@@ -1264,7 +1299,29 @@ declare const google: any;
                       </div>
                       <div>
                          <FormInputRow label="Period Number*:" value={session.periodNumber} onChange={e=>setSession({...session, periodNumber: e.target.value})} readOnly={isReadOnly} />
-                         <FormInputRow label="Date (dd/mm/yy):" type="date" value={session.date} onChange={handleDateChange} readOnly={isReadOnly} />
+                         <div className="flex flex-col md:flex-row md:items-center mb-3 md:mb-1.5 print:mb-1 print:flex-row print:items-center form-input-row">
+                             <label className="text-xs font-bold text-slate-700 mb-1 md:mb-0 md:w-32 flex-shrink-0 print:w-36 print:text-[12px] print:mb-0">Date (dd/mm/yy):</label>
+                             {isReadOnly ? (
+                                 <div className="form-input-print-text w-full bg-white/80 border border-slate-200 rounded-lg py-1 px-2 text-center font-bold text-slate-800">
+                                     {session.date}
+                                 </div>
+                             ) : (
+                                 <div className="w-full">
+                                     <div className="print:hidden">
+                                         <EvaluationDatePicker
+                                             value={session.date}
+                                             onChange={(newDate) => handleDateChange({ target: { value: newDate } })}
+                                             evaluationDays={settings?.evaluationDays}
+                                             disabled={isReadOnly}
+                                             className="h-9 md:h-7 text-sm"
+                                         />
+                                     </div>
+                                     <div className="hidden print:block form-input-print-text w-full">
+                                         {session.date}
+                                     </div>
+                                 </div>
+                             )}
+                         </div>
                          <div className="flex flex-col md:flex-row md:items-center mb-3 md:mb-1.5 print:mb-1 print:flex-row print:items-center form-input-row">
                              <label className="text-xs font-bold text-slate-700 mb-1 md:mb-0 md:w-32 flex-shrink-0 print:w-36 print:text-[12px] print:mb-0">Time:</label>
                              {isReadOnly ? (
@@ -1913,13 +1970,17 @@ declare const google: any;
                 ...(settings || {}),
                 facility: currentCenter || undefined,
                 logoRight: String(rightVal || '').trim(),
-                logoLeft: String(leftVal || '').trim()
+                logoLeft: String(leftVal || '').trim(),
+                skipDateAdjustment: true
             };
             window.google.script.run
                 .withSuccessHandler((res) => {
                     setSavingLogoModal(false);
                     if (res && res.token) setStoredAuthToken(res.token);
-                    if (setSettings) setSettings(res && res.settings ? res.settings : updated);
+                    if (setSettings) {
+                        const { skipDateAdjustment: _skip, ...cleanFallback } = updated;
+                        setSettings(res && res.settings ? res.settings : cleanFallback);
+                    }
                     setShowLogoModal(false);
                 })
                 .withFailureHandler((err) => {
@@ -2074,18 +2135,17 @@ declare const google: any;
                 for (let i = 0; i < total; i++) {
                     const originalSession = sessionsToCopy[i];
 
-                    // Generate new date keeping same day if possible
+                    // Generate new date keeping same day if possible, snapped to nearest evaluation day in target month
                     let newDateStr = '';
                     if (originalSession.sessionInfo.date) {
-                        const originalDate = new Date(originalSession.sessionInfo.date);
-                        const day = originalDate.getDate();
-                        const newDateObj = new Date(targetYear, targetMonth - 1, 1);
-                        const maxDays = new Date(targetYear, targetMonth, 0).getDate();
-                        newDateObj.setDate(Math.min(day, maxDays));
-                        newDateStr = newDateObj.toISOString().split('T')[0];
+                        const parsedOrig = parseYMD(originalSession.sessionInfo.date);
+                        const day = parsedOrig ? parsedOrig.day : 1;
+                        const maxDays = getDaysInMonthUTC(targetYear, targetMonth);
+                        newDateStr = formatYMD(targetYear, targetMonth, Math.min(day, maxDays));
                     } else {
                         newDateStr = `${copyTargetMonth}-01`;
                     }
+                    newDateStr = snapDateToNearestEvaluationDay(newDateStr, settings?.evaluationDays);
 
                     // Clone and update session
                     const newSessionId = uuidv4();
@@ -2190,7 +2250,8 @@ declare const google: any;
 
         const handleOpenCopySessionModal = (session) => {
             setCopyingSession(session);
-            setCopySessionDate(session.sessionInfo.date || (selectedMonth ? `${selectedMonth}-01` : new Date().toISOString().split('T')[0]));
+            const baseDate = session.sessionInfo.date || (selectedMonth ? `${selectedMonth}-01` : getTodayLocalYMD());
+            setCopySessionDate(snapDateToNearestEvaluationDay(baseDate, settings?.evaluationDays));
         };
 
         const handleConfirmCopySession = () => {
@@ -2367,8 +2428,8 @@ declare const google: any;
                     setSessions(prev => {
                         const updated = prev.map(s => {
                             if (s.sessionInfo.sessionId === sessionId) {
-                                const d = new Date(newDate);
-                                const periodNumber = !isNaN(d.getTime()) ? String(d.getMonth() + 1) : s.sessionInfo.periodNumber;
+                                const parsed = parseYMD(newDate);
+                                const periodNumber = parsed ? String(parsed.month) : s.sessionInfo.periodNumber;
                                 return {
                                     ...s,
                                     sessionInfo: {
@@ -2782,13 +2843,12 @@ declare const google: any;
                                             <td className="px-6 py-3 font-medium text-slate-900 whitespace-nowrap">
                                                 {isInlineEditing ? (
                                                     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                                        <input 
-                                                            type="date" 
-                                                            value={inlineDateValue} 
-                                                            onChange={(e) => setInlineDateValue(e.target.value)} 
+                                                        <EvaluationDatePicker
+                                                            value={inlineDateValue}
+                                                            onChange={(d) => setInlineDateValue(d)}
+                                                            evaluationDays={settings?.evaluationDays}
                                                             disabled={isSavingThis}
-                                                            autoFocus
-                                                            className="border border-[#F26522] rounded px-2 py-1 text-xs font-bold text-slate-800 bg-white shadow-xs focus:ring-2 focus:ring-orange-400 outline-none"
+                                                            compact={true}
                                                         />
                                                         <button 
                                                             type="button"
@@ -2811,7 +2871,12 @@ declare const google: any;
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-2 group">
-                                                        <span className="font-bold text-slate-900">{s.sessionInfo.date || 'No Date'}</span>
+                                                        <span className="font-bold text-slate-900 font-mono tabular-nums">{s.sessionInfo.date || 'No Date'}</span>
+                                                        {s.sessionInfo.date && (
+                                                            <span className="text-[10px] font-['Cairo'] font-bold text-sky-700 bg-sky-50 border border-sky-200/80 px-1.5 py-0.5 rounded-md">
+                                                                {getArabicWeekdayForDate(s.sessionInfo.date)}
+                                                            </span>
+                                                        )}
                                                         {canEdit && (
                                                             <button
                                                                 type="button"
@@ -3004,14 +3069,14 @@ declare const google: any;
 
                                 <div className="mb-4">
                                     <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                                        اختر التاريخ الجديد:
+                                        اختر التاريخ الجديد (أيام التقييم المحددة فقط):
                                     </label>
-                                    <input 
-                                        type="date"
+                                    <EvaluationDatePicker
                                         value={modalDateValue}
-                                        onChange={(e) => setModalDateValue(e.target.value)}
+                                        onChange={(d) => setModalDateValue(d)}
+                                        evaluationDays={settings?.evaluationDays}
                                         disabled={savingDateSessionId === editingDateSession.sessionInfo.sessionId}
-                                        className="w-full border-2 border-slate-300 focus:border-[#F26522] rounded-lg p-2.5 text-sm font-bold text-slate-800 outline-none transition-colors"
+                                        className="h-11 text-sm"
                                     />
                                 </div>
 
@@ -3087,36 +3152,35 @@ declare const google: any;
                                             ضمن شهر {activeFolderData.monthName}
                                         </span>
                                     </div>
-                                    <input 
-                                        type="date"
+                                    <EvaluationDatePicker
                                         value={copySessionDate}
-                                        onChange={(e) => setCopySessionDate(e.target.value)}
+                                        onChange={(d) => setCopySessionDate(d)}
+                                        evaluationDays={settings?.evaluationDays}
+                                        lockedMonth={selectedMonth}
                                         disabled={copyingSessionLoading}
-                                        className="w-full border-2 border-slate-300 focus:border-[#F26522] rounded-lg p-2.5 text-sm font-bold text-slate-800 outline-none transition-colors"
+                                        className="h-11 text-sm"
                                     />
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <button
                                             type="button"
                                             disabled={copyingSessionLoading}
-                                            onClick={() => setCopySessionDate(copyingSession.sessionInfo.date || '')}
+                                            onClick={() => setCopySessionDate(snapDateToNearestEvaluationDay(copyingSession.sessionInfo.date || '', settings?.evaluationDays))}
                                             className="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded transition-colors"
                                         >
                                             نفس تاريخ الأصل ({copyingSession.sessionInfo.date})
                                         </button>
                                         {(() => {
                                             if (!copyingSession.sessionInfo.date) return null;
-                                            const d = new Date(copyingSession.sessionInfo.date);
-                                            d.setDate(d.getDate() + 1);
-                                            const nextDayStr = d.toISOString().split('T')[0];
-                                            if (!nextDayStr.startsWith(selectedMonth)) return null;
+                                            const nextEvalStr = getNextEvaluationDateInMonth(copyingSession.sessionInfo.date, settings?.evaluationDays);
+                                            if (!nextEvalStr || !nextEvalStr.startsWith(selectedMonth)) return null;
                                             return (
                                                 <button
                                                     type="button"
                                                     disabled={copyingSessionLoading}
-                                                    onClick={() => setCopySessionDate(nextDayStr)}
-                                                    className="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded transition-colors"
+                                                    onClick={() => setCopySessionDate(nextEvalStr)}
+                                                    className="text-[11px] font-bold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded transition-colors"
                                                 >
-                                                    اليوم التالي ({nextDayStr})
+                                                    يوم التقييم التالي ({nextEvalStr} - {getArabicWeekdayForDate(nextEvalStr)})
                                                 </button>
                                             );
                                         })()}
@@ -3686,7 +3750,7 @@ declare const google: any;
           const [newCenterInput, setNewCenterInput] = useState('');
           const [addingCenterLoading, setAddingCenterLoading] = useState(false);
 
-          const [localSettings, setLocalSettings] = useState(settings || {
+          const [localSettings, setLocalSettings] = useState(() => ({
               header1: "مستشفى المنيا الجامعى للعيون",
               header2: "وحدة مكافحة العدوي",
               header3: "أحصائية غسيل الأيدي",
@@ -3698,10 +3762,13 @@ declare const google: any;
               departments: [],
               observers: [],
               cities: [],
-              profCategories: []
-          });
+              profCategories: [],
+              ...(settings || {}),
+              evaluationDays: normalizeEvaluationDays(settings?.evaluationDays)
+          }));
           const [isSaving, setIsSaving] = useState(false);
           const [message, setMessage] = useState(null);
+          const [evalDaysWarning, setEvalDaysWarning] = useState<string | null>(null);
 
           const handleAddNewCenterInSettings = () => {
               const name = newCenterInput.trim();
@@ -3761,7 +3828,10 @@ declare const google: any;
 
           useEffect(() => {
               if (settings) {
-                  setLocalSettings(settings);
+                  setLocalSettings({
+                      ...settings,
+                      evaluationDays: normalizeEvaluationDays(settings.evaluationDays)
+                  });
               }
           }, [settings]);
 
@@ -3773,9 +3843,47 @@ declare const google: any;
               setLocalSettings(prev => ({ ...prev, [field]: value }));
           };
 
+          const currentEvalDays = useMemo(
+              () => normalizeEvaluationDays(localSettings.evaluationDays),
+              [localSettings.evaluationDays]
+          );
+
+          const currentMonthEvalPreview = useMemo(() => {
+              const now = new Date();
+              return getEvaluationDatesForMonth(now.getFullYear(), now.getMonth() + 1, currentEvalDays);
+          }, [currentEvalDays]);
+
+          const handleToggleEvaluationDay = (dayIndex: number) => {
+              setEvalDaysWarning(null);
+              const exists = currentEvalDays.includes(dayIndex);
+              if (exists) {
+                  if (currentEvalDays.length <= 1) {
+                      setEvalDaysWarning('يجب اختيار يوم تقييم واحد على الأقل.');
+                      setTimeout(() => setEvalDaysWarning(null), 3500);
+                      return;
+                  }
+                  const next = currentEvalDays.filter(d => d !== dayIndex);
+                  setLocalSettings(prev => ({ ...prev, evaluationDays: next }));
+              } else {
+                  const next = normalizeEvaluationDays([...currentEvalDays, dayIndex]);
+                  setLocalSettings(prev => ({ ...prev, evaluationDays: next }));
+              }
+          };
+
+          const handleSetEvaluationDaysPreset = (days: number[]) => {
+              setEvalDaysWarning(null);
+              setLocalSettings(prev => ({ ...prev, evaluationDays: normalizeEvaluationDays(days) }));
+          };
+
           const handleSave = () => {
               setIsSaving(true);
               setMessage(null);
+
+              const payloadToSave = {
+                  ...localSettings,
+                  evaluationDays: normalizeEvaluationDays(localSettings.evaluationDays),
+                  facility: currentCenter || undefined
+              };
 
               let runner = window.google.script.run.withSuccessHandler((res) => {
                   setIsSaving(false);
@@ -3783,12 +3891,16 @@ declare const google: any;
                       setMessage({ type: 'error', text: res.error || 'تعذر حفظ الإعدادات' });
                       return;
                   }
+                  const adjustedCount = Number(res?.adjustedSessionsCount || 0);
+                  const successText = adjustedCount > 0
+                      ? `تم حفظ إعدادات المركز "${currentCenter || ''}" بنجاح! وتم تحديث تواريخ ${adjustedCount} جلسة محفوظة تلقائياً إلى أقرب يوم تقييم محدد وإعادة ترقيم الجلسات.`
+                      : `تم حفظ إعدادات المركز "${currentCenter || ''}" بنجاح!`;
                   setMessage({
                       type: 'success',
-                      text: `تم حفظ إعدادات المركز "${currentCenter || ''}" بنجاح!`
+                      text: successText
                   });
-                  setSettings(res && res.settings ? res.settings : localSettings);
-                  setTimeout(() => setMessage(null), 4000);
+                  setSettings(res && res.settings ? res.settings : payloadToSave);
+                  setTimeout(() => setMessage(null), adjustedCount > 0 ? 7500 : 4000);
               });
               if (typeof runner.withFailureHandler === 'function') {
                   runner = runner.withFailureHandler((error) => {
@@ -3796,7 +3908,7 @@ declare const google: any;
                       setMessage({ type: 'error', text: 'تعذر حفظ الإعدادات: ' + (error?.message || String(error)) });
                   });
               }
-              runner.saveSettings({ ...localSettings, facility: currentCenter || undefined });
+              runner.saveSettings(payloadToSave);
           };
 
           return (
@@ -4049,6 +4161,118 @@ declare const google: any;
                                       </div>
                                   );
                               })}
+                          </div>
+                      </section>
+
+                      {/* Evaluation Days Configuration Section */}
+                      <section className="bg-gradient-to-l from-sky-50/75 via-white to-orange-50/35 p-5 rounded-2xl border border-sky-200/80 font-['Cairo']" dir="rtl">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                              <div>
+                                  <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                                      <span className="w-8 h-8 rounded-xl bg-white border border-sky-200 text-sky-600 flex items-center justify-center shadow-2xs shrink-0">
+                                          <Icons.Calendar />
+                                      </span>
+                                      <span>أيام التقييم المعتمدة (Evaluation Days)</span>
+                                  </h2>
+                                  <p className="text-xs text-slate-600 mt-1">
+                                      اختر أيام الأسبوع المسموح بالتقييم فيها. ستظهر هذه الأيام فقط من كل شهر عند اختيار أو تعديل التاريخ.
+                                  </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                  <button
+                                      type="button"
+                                      onClick={() => handleSetEvaluationDaysPreset([...ALL_EVALUATION_DAYS])}
+                                      className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 hover:border-sky-300 transition-colors"
+                                  >
+                                      كل الأيام
+                                  </button>
+                                  <button
+                                      type="button"
+                                      onClick={() => handleSetEvaluationDaysPreset([6, 0, 1, 2, 3, 4])}
+                                      className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 hover:border-sky-300 transition-colors"
+                                  >
+                                      السبت - الخميس
+                                  </button>
+                                  <button
+                                      type="button"
+                                      onClick={() => handleSetEvaluationDaysPreset([0, 1, 2, 3, 4])}
+                                      className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 hover:border-sky-300 transition-colors"
+                                  >
+                                      الأحد - الخميس
+                                  </button>
+                              </div>
+                          </div>
+
+                          {/* 7 Weekday Checkboxes */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 my-4">
+                              {EVALUATION_WEEKDAYS.map((weekday) => {
+                                  const isChecked = currentEvalDays.includes(weekday.day);
+                                  return (
+                                      <label
+                                          key={weekday.day}
+                                          className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 cursor-pointer select-none transition-all ${
+                                              isChecked
+                                                  ? 'bg-sky-50/90 border-sky-500 text-sky-900 shadow-xs'
+                                                  : 'bg-white border-slate-200 text-slate-500 hover:border-sky-300 hover:bg-slate-50'
+                                          }`}
+                                      >
+                                          <input
+                                              type="checkbox"
+                                              checked={isChecked}
+                                              onChange={() => handleToggleEvaluationDay(weekday.day)}
+                                              className="w-4 h-4 accent-sky-600 rounded cursor-pointer"
+                                          />
+                                          <span className={`text-sm font-extrabold ${isChecked ? 'text-slate-900' : 'text-slate-600'}`}>
+                                              {weekday.label}
+                                          </span>
+                                          <span className="text-[10px] font-semibold text-slate-400">
+                                              {weekday.short}
+                                          </span>
+                                      </label>
+                                  );
+                              })}
+                          </div>
+
+                          {evalDaysWarning && (
+                              <div className="mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                                  {evalDaysWarning}
+                              </div>
+                          )}
+
+                          {/* Live Current-Month Preview */}
+                          <div className="bg-white/90 rounded-xl border border-slate-200/90 p-3 mb-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                  <span className="text-xs font-bold text-slate-700">
+                                      الأيام المحددة حالياً: <span className="text-sky-700">{formatEvaluationDaysSummary(currentEvalDays)}</span>
+                                  </span>
+                                  <span className="text-[11px] font-mono tabular-nums font-bold text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">
+                                      {currentMonthEvalPreview.length} يوم تقييم هذا الشهر
+                                  </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                                  {currentMonthEvalPreview.slice(0, 14).map((d) => (
+                                      <span
+                                          key={d.dateStr}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700"
+                                      >
+                                          <span className="font-mono tabular-nums font-bold text-slate-900">{String(d.day).padStart(2, '0')}</span>
+                                          <span className="text-slate-500">{d.weekdayLabel}</span>
+                                      </span>
+                                  ))}
+                                  {currentMonthEvalPreview.length > 14 && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-sky-50 border border-sky-200 text-[11px] font-bold text-sky-700">
+                                          +{currentMonthEvalPreview.length - 14} أيام أخرى
+                                      </span>
+                                  )}
+                              </div>
+                          </div>
+
+                          {/* Automatic Date Snapping Notice */}
+                          <div className="bg-orange-50/80 border border-orange-200/90 rounded-xl p-3 text-orange-950 text-xs leading-relaxed flex items-start gap-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#F26522] shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                              <div>
+                                  <strong>التحديث التلقائي للتواريخ المحفوظة:</strong> عند تعديل أيام التقييم والضغط على <strong>"حفظ الإعدادات"</strong>، يقوم النظام تلقائياً بتغيير تواريخ جميع الجلسات المحفوظة لهذا المركز التي لا توافق الأيام المختارة إلى <strong>أقرب يوم تقييم محدد</strong> داخل نفس الشهر، مع إعادة ترتيب أرقام الجلسات تلقائياً.
+                              </div>
                           </div>
                       </section>
 
