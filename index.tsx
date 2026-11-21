@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import ReactDOM from 'react-dom/client';
 import {
   BarChart,
@@ -36,6 +37,11 @@ import {
 
 (window as any).React = React;
 (window as any).ReactDOM = ReactDOM;
+
+const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  if (typeof document === 'undefined') return null;
+  return createPortal(children, document.body);
+};
 
 declare global {
   interface Window {
@@ -1814,8 +1820,9 @@ declare const google: any;
           if (!isOpen) return null;
 
           return (
-              <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 no-print animate-fade-in font-['Cairo']" dir="rtl" onClick={() => !isSaving && onClose()}>
-                  <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-sky-200/80 text-right" onClick={(e) => e.stopPropagation()}>
+              <ModalPortal>
+                  <div className="fixed inset-0 z-[150] bg-slate-900/45 backdrop-blur-md flex items-center justify-center p-4 no-print font-['Cairo'] overflow-y-auto" dir="rtl" onClick={() => !isSaving && onClose()}>
+                      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-sky-200/80 text-right my-auto" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
                           <div className="flex items-center gap-2.5">
                               <span className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center"><Icons.LogoEdit /></span>
@@ -1926,8 +1933,9 @@ declare const google: any;
                               {isSaving ? 'جاري الحفظ...' : 'حفظ وتطبيق على الطباعة ✓'}
                           </button>
                       </div>
+                      </div>
                   </div>
-              </div>
+              </ModalPortal>
           );
       };
 
@@ -3026,22 +3034,25 @@ declare const google: any;
                     </div>
                     
                     {deleteConfirmId && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
-                                <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Session</h3>
-                                <p className="text-slate-600 mb-6">Are you sure you want to delete this session? This action cannot be undone.</p>
-                                <div className="flex justify-end gap-3">
-                                    <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium transition-colors">Cancel</button>
-                                    <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition-colors">Delete</button>
+                        <ModalPortal>
+                            <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center z-[140] p-4 overflow-y-auto">
+                                <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 my-auto">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Session</h3>
+                                    <p className="text-slate-600 mb-6">Are you sure you want to delete this session? This action cannot be undone.</p>
+                                    <div className="flex justify-end gap-3">
+                                        <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium transition-colors">Cancel</button>
+                                        <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition-colors">Delete</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </ModalPortal>
                     )}
 
                     {/* Edit Session Date Modal */}
                     {editingDateSession && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-['Cairo']" dir="rtl" onClick={() => !savingDateSessionId && setEditingDateSession(null)}>
-                            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-right border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                        <ModalPortal>
+                        <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center z-[140] p-4 font-['Cairo'] overflow-y-auto" dir="rtl" onClick={() => !savingDateSessionId && setEditingDateSession(null)}>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-right border border-sky-200/80 my-auto" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center gap-2 border-b pb-3 mb-4">
                                     <div className="p-2 bg-orange-100 text-[#F26522] rounded-lg">
                                         <Icons.Calendar />
@@ -3106,12 +3117,14 @@ declare const google: any;
                                 </div>
                             </div>
                         </div>
+                        </ModalPortal>
                     )}
 
                     {/* Copy Session in Same Month Modal */}
                     {copyingSession && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-['Cairo']" dir="rtl" onClick={() => !copyingSessionLoading && setCopyingSession(null)}>
-                            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-right border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                        <ModalPortal>
+                        <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center z-[140] p-4 font-['Cairo'] overflow-y-auto" dir="rtl" onClick={() => !copyingSessionLoading && setCopyingSession(null)}>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-right border border-sky-200/80 my-auto" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center gap-2 border-b pb-3 mb-4">
                                     <div className="p-2 bg-amber-100 text-amber-700 rounded-lg">
                                         <Icons.Clipboard />
@@ -3213,6 +3226,7 @@ declare const google: any;
                                 </div>
                             </div>
                         </div>
+                        </ModalPortal>
                     )}
                 </div>
             );
@@ -3468,8 +3482,9 @@ declare const google: any;
              
              {/* Copy Month Modal */}
              {copyingMonthGroup && (
-                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 font-['Cairo']" onClick={() => !copyProgress && setCopyingMonthGroup(null)}>
-                     <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-right" dir="rtl" onClick={(e) => e.stopPropagation()}>
+                 <ModalPortal>
+                 <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center z-[140] p-4 font-['Cairo'] overflow-y-auto" onClick={() => !copyProgress && setCopyingMonthGroup(null)}>
+                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-right border border-sky-200/80 my-auto" dir="rtl" onClick={(e) => e.stopPropagation()}>
                          <h3 className="text-xl font-bold text-slate-800 mb-3 border-b pb-2 flex items-center gap-2">
                              <span>نسخ سجلات شهر</span>
                              <span className="text-[#F26522]">{new Date(copyingMonthGroup.monthKey + "-02").toLocaleString('ar', { month: 'long', year: 'numeric' })}</span>
@@ -3541,11 +3556,13 @@ declare const google: any;
                          )}
                      </div>
                  </div>
+                 </ModalPortal>
              )}
               {/* Delete Month(s) Modal */}
               {deleteMonthsConfirm && deleteMonthsConfirm.length > 0 && (
-                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-['Cairo']" dir="rtl" onClick={() => !deletingMonthLoading && setDeleteMonthsConfirm(null)}>
-                      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-right border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                  <ModalPortal>
+                  <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center z-[140] p-4 font-['Cairo'] overflow-y-auto" dir="rtl" onClick={() => !deletingMonthLoading && setDeleteMonthsConfirm(null)}>
+                      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-right border border-rose-200 my-auto" onClick={(e) => e.stopPropagation()}>
                           <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4 mx-auto">
                               <Icons.Trash />
                           </div>
@@ -3594,6 +3611,7 @@ declare const google: any;
                           </div>
                       </div>
                   </div>
+                  </ModalPortal>
               )}
 
               {/* Header Logo Modal for Folder and List Views */}
@@ -4350,8 +4368,9 @@ declare const google: any;
 
                   {/* Center Delete Confirmation Modal in Settings */}
                   {centerToDeleteInSettings && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in" dir="rtl">
-                          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-200 font-['Cairo']">
+                      <ModalPortal>
+                      <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/55 backdrop-blur-xs p-4 overflow-y-auto" dir="rtl">
+                          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-200 font-['Cairo'] my-auto">
                               <div className="flex items-center gap-3 text-rose-600 mb-4">
                                   <div className="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -4404,6 +4423,7 @@ declare const google: any;
                               </div>
                           </div>
                       </div>
+                      </ModalPortal>
                   )}
               </div>
           );
@@ -4542,6 +4562,7 @@ declare const google: any;
                              onEdit={(d) => {
                                  setEditData(d);
                                  setView('form');
+                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                              }}
                              settings={settings}
                              setSettings={setSettings}

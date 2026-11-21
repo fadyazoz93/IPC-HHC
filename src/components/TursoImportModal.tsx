@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface TursoFacilityStat {
   name: string;
@@ -180,9 +181,11 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
     setSourceFacilityFilter('__ALL__');
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[120] bg-slate-900/45 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 no-print overflow-y-auto font-['Cairo']"
+      className="fixed inset-0 z-[150] bg-slate-900/45 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 no-print overflow-y-auto font-['Cairo']"
       dir="rtl"
       onClick={() => {
         if (!isImporting) onClose();
@@ -634,6 +637,7 @@ export const TursoImportModal: React.FC<TursoImportModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

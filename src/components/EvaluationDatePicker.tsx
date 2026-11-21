@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   normalizeEvaluationDays,
   parseYMD,
@@ -142,9 +143,9 @@ export const EvaluationDatePicker: React.FC<EvaluationDatePickerProps> = ({
         </span>
       </button>
 
-      {isOpen && (
+      {isOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 no-print animate-fade-in font-['Cairo']"
+          className="fixed inset-0 z-[200] bg-slate-900/45 backdrop-blur-sm flex items-center justify-center p-4 no-print font-['Cairo'] overflow-y-auto"
           dir="rtl"
           onClick={() => setIsOpen(false)}
         >
@@ -319,7 +320,8 @@ export const EvaluationDatePicker: React.FC<EvaluationDatePickerProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
